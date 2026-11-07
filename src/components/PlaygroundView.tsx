@@ -316,17 +316,18 @@ export function LivingFujiScene() {
 
       {/* =====================================================================
           BANCADA 1: REVELAÇÃO DE IMAGENS (<SumiMaskReveal />)
+          No mobile a tela de pintura vem primeiro (order-1 lg:order-2) para facilitar o toque imediato
           ===================================================================== */}
       {activeTab === 'mask' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          <div className="lg:col-span-4 border border-[#D5CEC0] bg-[#E6DFD1]/55 rounded-xl p-4 sm:p-5 space-y-5">
+          <div className="order-2 lg:order-1 lg:col-span-4 border border-[#D5CEC0] bg-[#E6DFD1]/55 rounded-xl p-4 sm:p-5 space-y-5">
             <div>
               <h2 className="text-lg font-semibold text-[#11100E] mb-1">
                 Pintura Animada de Imagens
               </h2>
               <p className="text-xs text-[#3F3D39]">
-                Use a obra do Monte Fuji ou envie qualquer imagem do seu computador para vê-la ser
-                pintada na tela.
+                Use a obra do Monte Fuji ou envie qualquer imagem do seu celular/computador para
+                revelá-la com pinceladas ou com a ponta do dedo.
               </p>
             </div>
 
@@ -383,7 +384,7 @@ export function LivingFujiScene() {
                 <option value="katana_slashes">Golpes Cruzados de Pincel</option>
                 <option value="enso_spiral">Espiral Caligráfica Zen Ensō</option>
                 <option value="hokusai_tide">Correntes de Rio &amp; Ondas</option>
-                <option value="interactive_brush">Pintura Manual (Revele com o Mouse/Caneta)</option>
+                <option value="interactive_brush">Pintar com o Dedo / Mouse (Do Zero)</option>
               </select>
             </div>
 
@@ -487,7 +488,63 @@ export function LivingFujiScene() {
             </SumiButton>
           </div>
 
-          <div className="lg:col-span-8 space-y-4">
+          <div className="order-1 lg:order-2 lg:col-span-8 space-y-4">
+            {/* Barra rápida para Celular/Tablet acima da tela */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl border border-[#D5CEC0] bg-[#E6DFD1]/65">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    { id: 'fuji_masterpiece', label: 'Abertura Fuji' },
+                    { id: 'katana_slashes', label: 'Golpes' },
+                    { id: 'hokusai_tide', label: 'Ondas' },
+                    { id: 'enso_spiral', label: 'Ensō' },
+                    { id: 'interactive_brush', label: 'Pintar com o Dedo' },
+                  ] as const
+                ).map((m, idx) => (
+                  <SumiButton
+                    key={m.id}
+                    variant={
+                      maskChoreography === m.id
+                        ? 'ink'
+                        : m.id === 'interactive_brush'
+                          ? 'crimson'
+                          : 'washi'
+                    }
+                    size="xs"
+                    seed={310 + idx}
+                    active={maskChoreography === m.id}
+                    onClick={() => {
+                      setMaskChoreography(m.id);
+                      setMaskReplayTrigger((t) => t + 1);
+                    }}
+                  >
+                    {m.label}
+                  </SumiButton>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <SumiButton
+                  variant="washi"
+                  size="xs"
+                  seed={318}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <SumiIcon name="upload" size={14} color="#11100E" />
+                  <span>Sua Foto</span>
+                </SumiButton>
+                <SumiButton
+                  variant="washi"
+                  size="xs"
+                  seed={319}
+                  onClick={() => setMaskReplayTrigger((t) => t + 1)}
+                >
+                  <SumiIcon name="replay" size={14} color="#11100E" />
+                  <span>Repintar</span>
+                </SumiButton>
+              </div>
+            </div>
+
             <div className="h-[320px] sm:h-[420px] lg:h-[480px] rounded-xl border border-[#D5CEC0] bg-[#F4F1EA] overflow-hidden relative shadow-xs">
               <SumiMaskReveal
                 src={maskImageSrc}
@@ -500,10 +557,8 @@ export function LivingFujiScene() {
                 maskOnlyPreview={maskXRay}
                 replayTrigger={maskReplayTrigger}
                 interactiveBrush
+                showTouchControls
               />
-              <div className="absolute top-3 left-3 right-3 sm:right-auto px-2.5 py-1 rounded bg-[#F2EDE2]/90 border border-[#D5CEC0] text-[11px] sm:text-xs text-[#3F3D39] pointer-events-none">
-                Dica: Clique e arraste sobre a tela para revelar novas áreas com o pincel
-              </div>
             </div>
 
             <div className="border border-[#D5CEC0] rounded-xl bg-[#11100E] text-[#F2EDE2] p-4">
@@ -535,17 +590,18 @@ export function LivingFujiScene() {
 
       {/* =====================================================================
           BANCADA 2: ATELIER DE PINTURA LIVRE COM PRESSÃO (<SumiBrushCanvas />)
+          No mobile a tela de pintura e o seletor rápido de pincéis aparecem primeiro
           ===================================================================== */}
       {activeTab === 'atelier' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          <div className="lg:col-span-4 border border-[#D5CEC0] bg-[#E6DFD1]/55 rounded-xl p-4 sm:p-5 space-y-5">
+          <div className="order-2 lg:order-1 lg:col-span-4 border border-[#D5CEC0] bg-[#E6DFD1]/55 rounded-xl p-4 sm:p-5 space-y-5">
             <div>
               <h2 className="text-lg font-semibold text-[#11100E] mb-1">
                 Atelier de Pincéis &amp; Pressão
               </h2>
               <p className="text-xs text-[#3F3D39]">
-                Desenhe livremente no papel Washi. O traço responde à pressão da caneta ou à
-                velocidade do mouse.
+                Desenhe com o dedo no celular, caneta ou mouse no papel Washi. O traço responde à
+                pressão e à velocidade do movimento.
               </p>
             </div>
 
@@ -701,7 +757,33 @@ export function LivingFujiScene() {
             </div>
           </div>
 
-          <div className="lg:col-span-8 space-y-4">
+          <div className="order-1 lg:order-2 lg:col-span-8 space-y-4">
+            {/* Seletor Rápido de Pincéis Visível no Mobile/Tablet acima da tela */}
+            <div className="lg:hidden flex flex-wrap items-center gap-1.5 p-2.5 rounded-xl border border-[#D5CEC0] bg-[#E6DFD1]/70">
+              <span className="text-[11px] font-semibold text-[#11100E] mr-1">Pincel:</span>
+              {(
+                [
+                  { id: 'sakura_branch', label: 'Sakura' },
+                  { id: 'sumi_kasure', label: 'Nanquim' },
+                  { id: 'hokusai_wave', label: 'Ondas' },
+                  { id: 'suibokuga_flame', label: 'Fogo' },
+                  { id: 'kumo_cloud', label: 'Nuvens' },
+                  { id: 'tarashikomi_wash', label: 'Aquarela' },
+                ] as const
+              ).map((b, idx) => (
+                <SumiButton
+                  key={b.id}
+                  variant={activeBrush === b.id ? 'ink' : 'washi'}
+                  size="xs"
+                  seed={340 + idx}
+                  active={activeBrush === b.id}
+                  onClick={() => setActiveBrush(b.id)}
+                >
+                  {b.label}
+                </SumiButton>
+              ))}
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl border border-[#D5CEC0] bg-[#E6DFD1]/60">
               <div className="flex flex-wrap items-center gap-2">
                 <SumiButton
@@ -722,7 +804,7 @@ export function LivingFujiScene() {
                   onClick={() => atelierActionsRef.current?.loadFujiPresetStrokes()}
                 >
                   <SumiIcon name="sakura" size={16} color="#11100E" />
-                  <span>Recarregar Traços Fuji</span>
+                  <span>Recarregar Fuji</span>
                 </SumiButton>
                 <SumiButton
                   variant="washi"
@@ -753,7 +835,7 @@ export function LivingFujiScene() {
                 <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
                   <SumiIcon name="download" size={16} color="#11100E" />
                 </span>
-                <span>Baixar Pintura PNG</span>
+                <span>Baixar PNG</span>
               </SumiButton>
             </div>
 
@@ -773,10 +855,9 @@ export function LivingFujiScene() {
 
               <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs font-tabular bg-[#F2EDE2]/90 border border-[#D5CEC0] rounded-lg px-3 py-1.5 pointer-events-none">
                 <span>
-                  Pressão do Pincel: {(telemetry.pressure * 100).toFixed(0)}% · Velocidade:{' '}
-                  {(telemetry.velocity * 100).toFixed(0)}%
+                  Toque ou arraste para pintar · Pressão: {(telemetry.pressure * 100).toFixed(0)}%
                 </span>
-                <span>Traços na Tela: {telemetry.strokeCount}</span>
+                <span>Traços: {telemetry.strokeCount}</span>
               </div>
             </div>
 

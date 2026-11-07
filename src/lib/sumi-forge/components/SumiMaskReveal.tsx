@@ -37,17 +37,25 @@ export interface SumiMaskRevealProps {
   progress?: number;
   /** Chave de gatilho para reiniciar a pintura do zero */
   replayTrigger?: number;
-  /** Permite ao usuário pintar/revelar ainda mais com o mouse ou caneta */
+  /** Permite ao usuário pintar/revelar ainda mais com o dedo, mouse ou caneta */
   interactiveBrush?: boolean;
+  /** Exibe controles rápidos flutuantes para pintar com o dedo no mobile/desktop */
+  showTouchControls?: boolean;
   /** Classe CSS do container */
   className?: string;
+}
+
+interface TouchPoint {
+  x: number;
+  y: number;
+  pressure: number;
 }
 
 /**
  * Componente <SumiMaskReveal />
  * Realiza a pintura animada de qualquer imagem passada via prop `src` combinando máscara de pinceladas
  * Multi-Cerdas Kasure, Aguada Tarashikomi e Canvas Composite (`destination-in`), com cache offscreen
- * para manter 60/120 FPS cravados.
+ * e suporte completo a pintura por toque no mobile (arrastar ou tocar para revelar).
  */
 export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
   src = '/assets/aistudio/image_8f7809d3.png',
@@ -62,6 +70,7 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
   progress: controlledProgress,
   replayTrigger = 0,
   interactiveBrush = true,
+  showTouchControls = true,
   className = '',
 }) => {
   const displayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -72,10 +81,26 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const userStrokesRef = useRef<{ x: number; y: number; pressure: number }[][]>([]);
-  const activeStrokeRef = useRef<{ x: number; y: number; pressure: number }[] | null>(null);
+
+  // Modo de pintura livre com o dedo/mouse ("scratch & paint from zero")
+  const [manualScratchMode, setManualScratchMode] = useState<boolean>(
+    choreography === 'interactive_brush'
+  );
+  const [userStrokeCount, setUserStrokeCount] = useState<number>(0);
+
+  const userStrokesRef = useRef<TouchPoint[][]>([]);
+  const activeStrokeRef = useRef<TouchPoint[] | null>(null);
+  const lastPointerPosRef = useRef<{ x: number; y: number; active: boolean }>({
+    x: 0,
+    y: 0,
+    active: false,
+  });
   const strokeVersionRef = useRef<number>(0);
   const startTimeRef = useRef<number>(performance.now());
+
+  useEffect(() => {
+    setManualScratchMode(choreography === 'interactive_brush');
+  }, [choreography]);
 
   useEffect(() => {
     setImageLoaded(false);
@@ -97,6 +122,7 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
   useEffect(() => {
     startTimeRef.current = performance.now();
     userStrokesRef.current = [];
+    setUserStrokeCount(0);
     strokeVersionRef.current++;
     cacheKeyRef.current = '';
   }, [replayTrigger, choreography, seed, src]);
@@ -145,7 +171,7 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
       }
 
       const dpr = Math.min(1.75, window.devicePixelRatio || 1);
-      const w = Math.max(240, Math.floor(cachedRect.width || canvas.clientWidth || 500));
+      const w = Math.max(220, Math.floor(cachedRect.width || canvas.clientWidth || 500));
       const h = Math.max(160, Math.floor(cachedRect.height || canvas.clientHeight || 320));
 
       const targetW = Math.floor(w * dpr);
@@ -166,15 +192,16 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
       if (!ctx || !mCtx || !cCtx) return;
 
       const elapsed = (now - startTimeRef.current) / 1000;
-      const autoProg =
-        choreography === 'interactive_brush'
-          ? 0.18
-          : Math.min(1, elapsed / Math.max(0.4, duration));
+      const isInteractiveOnly = manualScratchMode || choreography === 'interactive_brush';
+      const autoProg = isInteractiveOnly
+        ? 0.16
+        : Math.min(1, elapsed / Math.max(0.4, duration));
       const prog = controlledProgress !== undefined ? controlledProgress : autoProg;
       const quantProg = prog >= 0.998 ? 1 : Math.round(prog * 90) / 90;
-      const scale = Math.min(w / 1000, h / 600);
+      // Escala amigável para mobile: garante que pinceladas no celular tenham largura generosa
+      const scale = Math.max(0.52, Math.min(w / 920, h / 560));
 
-      const currentCacheKey = `${targetW}x${targetH}:${choreography}:${quantProg}:${bristleCount}:${dryBrushGap}:${seed}:${maskOnlyPreview}:${imageLoaded}:${strokeVersionRef.current}`;
+      const currentCacheKey = `${targetW}x${targetH}:${choreography}:${isInteractiveOnly}:${quantProg}:${bristleCount}:${dryBrushGap}:${seed}:${maskOnlyPreview}:${imageLoaded}:${strokeVersionRef.current}`;
 
       if (cacheKeyRef.current !== currentCacheKey) {
         // 1. Constrói a Máscara de Pinceladas Sumi-e Kasure + Aguada Tarashikomi no maskCanvas
@@ -182,7 +209,24 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
         mCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         mCtx.clearRect(0, 0, w, h);
 
-        if (choreography === 'fuji_masterpiece') {
+        if (isInteractiveOnly) {
+          // No modo interativo/mobile de pintar com o dedo, cria apenas uma sutil mancha inicial
+          // caso o usuário ainda não tenha tocado na tela, convidando-o a revelar o restante
+          if (userStrokesRef.current.length === 0 && !activeStrokeRef.current) {
+            drawTarashikomiWashBlob(
+              mCtx,
+              w * 0.5,
+              h * 0.48,
+              w * 0.14,
+              h * 0.14,
+              0,
+              '#000000',
+              '#000000',
+              0.85,
+              seed + 19
+            );
+          }
+        } else if (choreography === 'fuji_masterpiece') {
           const sunP = Math.min(1, quantProg * 2.2);
           if (sunP > 0.01) {
             drawTarashikomiWashBlob(
@@ -391,16 +435,42 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
           : userStrokesRef.current;
 
         allUserStrokes.forEach((pts, sIdx) => {
-          if (pts.length < 2) return;
-          const spine = samplesToSpine(pts, 0.1, seed + sIdx * 17);
-          const avgPressure = pts.reduce((acc, p) => acc + p.pressure, 0) / pts.length;
+          if (pts.length === 0) return;
+          // Se foi um toque único no mobile (1 ponto), cria um golpe de pincel + mancha Tarashikomi
+          const effectivePts =
+            pts.length === 1
+              ? [
+                  { x: pts[0].x - 28 * scale, y: pts[0].y + 10 * scale, pressure: 0.85 },
+                  { x: pts[0].x, y: pts[0].y, pressure: 0.95 },
+                  { x: pts[0].x + 32 * scale, y: pts[0].y - 12 * scale, pressure: 0.75 },
+                ]
+              : pts;
+
+          const spine = samplesToSpine(effectivePts, 0.1, seed + sIdx * 17);
+          const avgPressure =
+            effectivePts.reduce((acc, p) => acc + p.pressure, 0) / effectivePts.length;
+
+          // Mancha de base úmida no início do toque para facilitar a revelação no celular
+          drawTarashikomiWashBlob(
+            mCtx,
+            effectivePts[0].x,
+            effectivePts[0].y,
+            46 * scale,
+            38 * scale,
+            sIdx * 0.7,
+            '#000000',
+            '#000000',
+            0.95,
+            seed + 800 + sIdx * 19
+          );
+
           drawSumiKasureRibbon(mCtx, {
             spine,
-            maxWidth: 95 * scale * (0.65 + avgPressure * 0.85),
-            bristleCount: Math.max(12, Math.floor(bristleCount * 0.8)),
-            dryBrushGap: dryBrushGap * 0.8,
-            taperStart: 0.25,
-            taperEnd: 0.55,
+            maxWidth: 122 * scale * (0.75 + avgPressure * 0.85),
+            bristleCount: Math.max(14, Math.floor(bristleCount * 0.85)),
+            dryBrushGap: dryBrushGap * 0.65,
+            taperStart: 0.18,
+            taperEnd: 0.38,
             color: '#000000',
             alpha: 1,
             seed: seed + 900 + sIdx * 23,
@@ -439,6 +509,16 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
           cCtx.globalCompositeOperation = 'destination-in';
           cCtx.drawImage(maskCanvas, 0, 0, w, h);
           cCtx.globalCompositeOperation = 'source-over';
+
+          // No modo de pintura manual, desenha uma silhueta Washi bem suave (12%) por baixo
+          // para guiar o dedo do usuário ao revelar a pintura no mobile
+          if (isInteractiveOnly) {
+            cCtx.globalCompositeOperation = 'destination-over';
+            cCtx.globalAlpha = 0.12;
+            cCtx.drawImage(img, drawX, drawY, drawW, drawH);
+            cCtx.globalAlpha = 1;
+            cCtx.globalCompositeOperation = 'source-over';
+          }
         } else {
           cCtx.drawImage(maskCanvas, 0, 0, w, h);
         }
@@ -447,13 +527,55 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
         cacheKeyRef.current = currentCacheKey;
       }
 
-      // 3. Desenha o compositeCache no canvas principal (< 0.1ms) + pétalas vivas opcionais
+      // 3. Desenha o compositeCache no canvas principal + acentos vivos das pinceladas do usuário
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(compositeCache, 0, 0, w, h);
 
-      if (showLiveInkAccents && !maskOnlyPreview && prog > 0.2) {
+      // Desenha flores de Sakura sutis ao longo dos traços feitos pelo dedo/mouse do usuário
+      // para dar resposta visual imediata mesmo quando a área já estava revelada
+      if (!maskOnlyPreview) {
+        const allUserStrokes = activeStrokeRef.current
+          ? [...userStrokesRef.current, activeStrokeRef.current]
+          : userStrokesRef.current;
+
+        allUserStrokes.forEach((pts, sIdx) => {
+          if (pts.length === 0) return;
+          for (let i = 0; i < pts.length; i += 4) {
+            const pt = pts[i];
+            drawSakuraBlossom(
+              ctx,
+              pt.x + Math.sin(sIdx + i) * 8 * scale,
+              pt.y + Math.cos(sIdx + i) * 8 * scale,
+              (6.5 + (i % 3) * 2) * scale,
+              (sIdx + i) * 0.7,
+              '#C8232C',
+              '#FFF5F5',
+              '#141413',
+              0.78,
+              seed + 1400 + sIdx * 31 + i
+            );
+          }
+        });
+
+        // Indicador visual tátil enquanto o dedo/cursor desliza pela tela
+        if (lastPointerPosRef.current.active && activeStrokeRef.current) {
+          ctx.beginPath();
+          ctx.arc(
+            lastPointerPosRef.current.x,
+            lastPointerPosRef.current.y,
+            24 * scale,
+            0,
+            Math.PI * 2
+          );
+          ctx.strokeStyle = 'rgba(200, 35, 44, 0.55)';
+          ctx.lineWidth = 1.75;
+          ctx.stroke();
+        }
+      }
+
+      if (showLiveInkAccents && !maskOnlyPreview && prog > 0.15) {
         const rand = createSeededRandom(seed + 777);
         const livePetals = 14;
         for (let p = 0; p < livePetals; p++) {
@@ -475,7 +597,7 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
               '#C8232C',
               '#FFF5F5',
               '#141413',
-              0.85 * Math.min(1, (prog - 0.2) * 2),
+              0.85 * Math.min(1, (prog - 0.15) * 2),
               seed + p * 31
             );
           } else {
@@ -487,7 +609,7 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
               elapsed * 1.8 + p,
               0.4 + 0.55 * Math.abs(Math.sin(elapsed * 2.2 + p)),
               '#C8232C',
-              0.88 * Math.min(1, (prog - 0.2) * 2)
+              0.88 * Math.min(1, (prog - 0.15) * 2)
             );
           }
         }
@@ -496,7 +618,9 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
       ctx.restore();
 
       const needsMoreFrames =
-        prog < 1 || (showLiveInkAccents && !maskOnlyPreview) || activeStrokeRef.current !== null;
+        prog < 1 ||
+        (showLiveInkAccents && !maskOnlyPreview) ||
+        activeStrokeRef.current !== null;
       if (needsMoreFrames) {
         animId = requestAnimationFrame(renderFrame);
       }
@@ -511,6 +635,7 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
     imageLoaded,
     imageError,
     choreography,
+    manualScratchMode,
     duration,
     bristleCount,
     dryBrushGap,
@@ -527,16 +652,17 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!interactiveBrush) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignora caso o dispositivo não suporte pointer capture
+    }
     const rect = e.currentTarget.getBoundingClientRect();
-    const pressure = e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : 0.75;
-    activeStrokeRef.current = [
-      {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-        pressure,
-      },
-    ];
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const pressure = e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : 0.82;
+    lastPointerPosRef.current = { x, y, active: true };
+    activeStrokeRef.current = [{ x, y, pressure }];
     triggerManualRedraw();
   };
 
@@ -545,20 +671,51 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+    lastPointerPosRef.current = { x, y, active: true };
     const prev = activeStrokeRef.current[activeStrokeRef.current.length - 1];
     const dist = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
-    if (dist < 4) return;
-    const velocityPressure = Math.max(0.25, Math.min(1, 1 - dist / 65));
+    if (dist < 3) return;
+    const velocityPressure = Math.max(0.35, Math.min(1, 1 - dist / 68));
     const pressure = e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : velocityPressure;
     activeStrokeRef.current.push({ x, y, pressure });
     triggerManualRedraw();
   };
 
   const handlePointerUp = () => {
-    if (activeStrokeRef.current && activeStrokeRef.current.length >= 2) {
-      userStrokesRef.current.push(activeStrokeRef.current);
+    lastPointerPosRef.current.active = false;
+    if (activeStrokeRef.current && activeStrokeRef.current.length >= 1) {
+      const pts = activeStrokeRef.current;
+      // Se foi um toque rápido de 1 ponto no celular, sintetiza um golpe caligráfico completo
+      if (pts.length === 1) {
+        const p = pts[0];
+        userStrokesRef.current.push([
+          { x: p.x - 26, y: p.y + 10, pressure: 0.85 },
+          { x: p.x, y: p.y, pressure: 0.95 },
+          { x: p.x + 28, y: p.y - 10, pressure: 0.78 },
+        ]);
+      } else {
+        userStrokesRef.current.push(pts);
+      }
+      setUserStrokeCount(userStrokesRef.current.length);
     }
     activeStrokeRef.current = null;
+    triggerManualRedraw();
+  };
+
+  const handleStartScratchPaint = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    userStrokesRef.current = [];
+    setUserStrokeCount(0);
+    setManualScratchMode(true);
+    triggerManualRedraw();
+  };
+
+  const handleReplayFull = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    userStrokesRef.current = [];
+    setUserStrokeCount(0);
+    setManualScratchMode(false);
+    startTimeRef.current = performance.now();
     triggerManualRedraw();
   };
 
@@ -573,8 +730,50 @@ export const SumiMaskReveal: React.FC<SumiMaskRevealProps> = ({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        className={`block w-full h-full ${interactiveBrush ? 'cursor-crosshair' : ''}`}
+        style={{ touchAction: interactiveBrush ? 'none' : 'auto' }}
+        className={`block w-full h-full ${
+          interactiveBrush ? 'cursor-crosshair touch-none' : ''
+        }`}
       />
+
+      {interactiveBrush && showTouchControls && (
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none z-10">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F8F4EC]/90 backdrop-blur-md border border-[#11100E]/20 text-[11px] font-medium text-[#11100E] shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-[#C8232C] shrink-0" />
+            <span>
+              {manualScratchMode
+                ? userStrokeCount === 0
+                  ? 'Arraste o dedo ou toque na tela para revelar a pintura'
+                  : `${userStrokeCount} ${userStrokeCount === 1 ? 'pincelada aplicada' : 'pinceladas aplicadas'}`
+                : 'Toque ou arraste na tela para pintar'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            <button
+              type="button"
+              onClick={handleStartScratchPaint}
+              className={`px-2.5 py-1 rounded-[3px] text-[11px] font-medium border transition-colors cursor-pointer ${
+                manualScratchMode
+                  ? 'bg-[#C8232C] text-[#FAF7F0] border-[#11100E]'
+                  : 'bg-[#F8F4EC]/92 text-[#11100E] border-[#11100E]/60 hover:bg-[#11100E] hover:text-[#FAF7F0]'
+              }`}
+            >
+              {manualScratchMode ? 'Limpar & Pintar do Zero' : 'Pintar do Zero (Toque)'}
+            </button>
+
+            {manualScratchMode && (
+              <button
+                type="button"
+                onClick={handleReplayFull}
+                className="px-2.5 py-1 rounded-[3px] text-[11px] font-medium bg-[#11100E] text-[#FAF7F0] border border-[#11100E] hover:bg-[#272420] transition-colors cursor-pointer"
+              >
+                Auto-Revelar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
