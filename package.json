@@ -1,6 +1,6 @@
 {
   "name": "@sumi-forge/react",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Japanese Sumi-e (ink wash painting) physics & generative canvas components for React",
   "author": "Christopher Marques Correa",
   "license": "Apache-2.0",
