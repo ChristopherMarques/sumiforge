@@ -265,6 +265,15 @@ O `@sumi-forge/react` foi projetado para oferecer uma experiência tátil de pri
 
 ---
 
+## Motor Procedural & Guia para Agentes de IA (`/llms.txt`)
+
+Além dos componentes React declarativos, `@sumi-forge/react` exporta todas as suas **primitivas matemáticas e de pintura em Canvas 2D** fortemente tipadas com JSDoc (`createSeededRandom`, `fbmNoise2D`, `sampleCubicCurve`, `drawWashiPaperTexture`, `drawTarashikomiWashBlob`, `drawSumiKasureRibbon`, `drawSakuraBlossom`, `renderSansuiMountainRidge`, `drawSansuiPineTree`, `drawSansuiMountainPavilion`, `drawSansuiCraneFlock`, `drawSansuiSampanBoat`) para que você — ou seu Agente de IA favorito (Cursor, Claude Code, Windsurf, Copilot, Antigravity) — possa criar novas pinturas procedurais inéditas do zero.
+
+- **Rota Pública para Agentes**: [`/llms.txt`](./public/llms.txt)
+- **No Playground Studio**: Clique no botão **`Guia IA · llms.txt`** no topo do Playground para copiar prompts prontos com contexto ou baixar o manifesto completo.
+
+---
+
 ## Desenvolvimento Local
 
 ```bash

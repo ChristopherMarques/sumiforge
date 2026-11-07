@@ -14,5 +14,7 @@ export * from './components/SumiIcon';
 export * from './components/SumiButton';
 export * from './components/JapaneseCalligraphy';
 export * from './components/SumiSansui';
+export * from './llmsGuide';
+
 
 
