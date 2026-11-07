@@ -163,6 +163,11 @@ export const JapaneseCalligraphy: React.FC<JapaneseCalligraphyProps> = ({
           } ${className}`}
         >
           <span
+            style={{
+              border: '2px solid #C8232C',
+              boxShadow: 'inset 0 0 0 1px rgba(200, 35, 44, 0.25)',
+              letterSpacing: '0.08em',
+            }}
             className={`hanko-seal px-2 py-0.5 text-xs font-bold font-editorial whitespace-nowrap transition-colors duration-200 ${
               hovered
                 ? 'bg-[#C8232C] text-[#FAF8F5]'
@@ -188,6 +193,10 @@ export const JapaneseCalligraphy: React.FC<JapaneseCalligraphyProps> = ({
           className={`relative inline-flex flex-col items-center shrink-0 cursor-help select-none ${className}`}
         >
           <span
+            style={{
+              writingMode: 'vertical-rl',
+              textOrientation: 'upright',
+            }}
             className={`tategaki font-editorial tracking-widest transition-colors duration-200 px-1.5 py-2 rounded-lg border ${
               hovered
                 ? 'text-[#C8232C] border-[#C8232C]/50 bg-[#C8232C]/8'
