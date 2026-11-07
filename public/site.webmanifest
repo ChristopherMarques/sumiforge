@@ -1,0 +1,26 @@
+{
+  "name": "SumiForge (@sumi-forge/react) · Pintura Viva e Caligrafia Japonesa em React",
+  "short_name": "SumiForge",
+  "description": "Biblioteca React para pintura animada de imagens, pincéis com pressão real e cenários procedurais japoneses.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2EDE2",
+  "theme_color": "#C8232C",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

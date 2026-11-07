@@ -1,0 +1,125 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3A352F #EAE3D5;
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: #F2EDE2;
+    color: #11100E;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-editorial {
+    font-family: var(--font-serif);
+  }
+
+  code,
+  pre,
+  .font-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom Japanese Sumi-e & Washi Scrollbars (Vertical & Horizontal) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EAE3D5;
+  border-left: 1px solid rgba(17, 16, 14, 0.08);
+  border-top: 1px solid rgba(17, 16, 14, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2A2622 0%, #11100E 78%, #C8232C 100%);
+  border-radius: 2px;
+  border: 1px solid #EAE3D5;
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+  background: linear-gradient(90deg, #2A2622 0%, #11100E 78%, #C8232C 100%);
+  border-radius: 2px;
+  border: 1px solid #EAE3D5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C8232C;
+}
+
+::-webkit-scrollbar-corner {
+  background: #EAE3D5;
+}
+
+/* Aged Sengoku Washi Parchment Surface */
+.washi-surface {
+  background-color: #F2EDE2;
+  background-image: 
+    radial-gradient(at 15% 18%, rgba(200, 35, 44, 0.035) 0px, transparent 52%),
+    radial-gradient(at 85% 78%, rgba(17, 16, 14, 0.045) 0px, transparent 55%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(17, 16, 14, 0.012) 0px,
+      rgba(17, 16, 14, 0.012) 1px,
+      transparent 1px,
+      transparent 7px
+    );
+}
+
+.dark .washi-surface {
+  background-color: #0F0E0C;
+  background-image: 
+    radial-gradient(at 18% 22%, rgba(200, 35, 44, 0.07) 0px, transparent 55%),
+    radial-gradient(at 82% 76%, rgba(180, 138, 62, 0.04) 0px, transparent 55%);
+}
+
+/* Authentic Japanese Hanko Red Stamp Seal */
+.hanko-seal {
+  border: 2px solid #C8232C;
+  color: #C8232C;
+  box-shadow: inset 0 0 0 1px rgba(200, 35, 44, 0.25);
+  letter-spacing: 0.08em;
+}
+
+/* Vertical Japanese Tategaki Typography */
+.tategaki {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+.checker-bg {
+  background-image: 
+    linear-gradient(45deg, rgba(17, 16, 14, 0.06) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(17, 16, 14, 0.06) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(17, 16, 14, 0.06) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(17, 16, 14, 0.06) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.dark .checker-bg {
+  background-image: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}

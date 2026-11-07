@@ -1,0 +1,6 @@
+{
+  "name": "@sumi-forge/react — Japanese Calligraphy, CSS Mask & Procedural VFX Library",
+  "description": "Installable React library and studio for procedural Japanese Sumi-e Kasure, Ukiyo-e Hokusai, Kumo clouds, Suibokuga Tarashikomi, Rough.js geometry, and animated CSS Mask painting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
