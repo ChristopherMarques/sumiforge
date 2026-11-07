@@ -11,6 +11,10 @@ import {
   MAGIC_SCHOOLS,
   MaskChoreography,
   renderVFXFrame,
+  SANSUI_COMPOSITIONS,
+  SANSUI_THEMES,
+  SansuiComposition,
+  SansuiThemeId,
   SchoolId,
   SumiBrushCanvas,
   SumiButton,
@@ -18,12 +22,13 @@ import {
   SumiLandscape,
   SumiLayerIntensities,
   SumiMaskReveal,
+  SumiSansui,
   SumiVFX,
   VFXConfig,
 } from '../lib/sumi-forge';
 
 interface PlaygroundViewProps {
-  initialTab?: 'mask' | 'atelier' | 'vfx' | 'landscape';
+  initialTab?: 'mask' | 'atelier' | 'vfx' | 'landscape' | 'sansui';
   initialArchetype?: ArchetypeId;
 }
 
@@ -31,7 +36,9 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   initialTab = 'mask',
   initialArchetype,
 }) => {
-  const [activeTab, setActiveTab] = useState<'mask' | 'atelier' | 'vfx' | 'landscape'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'mask' | 'atelier' | 'vfx' | 'landscape' | 'sansui'>(
+    initialTab
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -109,6 +116,23 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [landscapeWind, setLandscapeWind] = useState<number>(1.0);
   const [landscapeSeed, setLandscapeSeed] = useState<number>(8472);
   const [landscapeSchool, setLandscapeSchool] = useState<SchoolId>('fuji_sakura');
+
+  // ===========================================================================
+  // ESTADO BANCADA 5: GERADOR DE PAISAGENS SANSUI POR SEED (<SumiSansui />)
+  // ===========================================================================
+  const [sansuiComposition, setSansuiComposition] = useState<SansuiComposition>('panoramic_river');
+  const [sansuiTheme, setSansuiTheme] = useState<SansuiThemeId>('classic_washi');
+  const [sansuiSeed, setSansuiSeed] = useState<number>(8472);
+  const [sansuiLayers, setSansuiLayers] = useState<number>(5);
+  const [sansuiTreeDensity, setSansuiTreeDensity] = useState<number>(1.0);
+  const [sansuiMistDensity, setSansuiMistDensity] = useState<number>(1.0);
+  const [sansuiShowBoat, setSansuiShowBoat] = useState<boolean>(true);
+  const [sansuiAnimated, setSansuiAnimated] = useState<boolean>(true);
+  const [sansuiUseCustomColors, setSansuiUseCustomColors] = useState<boolean>(false);
+  const [sansuiCustomBg, setSansuiCustomBg] = useState<string>('#EDE6D6');
+  const [sansuiCustomInk, setSansuiCustomInk] = useState<string>('#1D1B18');
+  const [sansuiCustomWash, setSansuiCustomWash] = useState<string>('#6E8276');
+  const sansuiActionsRef = useRef<{ exportPng: (filename?: string) => void } | null>(null);
 
   const handleCopy = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -247,7 +271,8 @@ export function SakugaEffect() {
     />
   );
 }`
-          : `import { SumiLandscape, MAGIC_SCHOOLS } from '@sumi-forge/react';
+          : activeTab === 'landscape'
+            ? `import { SumiLandscape, MAGIC_SCHOOLS } from '@sumi-forge/react';
 
 export function LivingFujiScene() {
   return (
@@ -256,6 +281,29 @@ export function LivingFujiScene() {
       windSpeed={${landscapeWind}}
       colors={MAGIC_SCHOOLS['${landscapeSchool}'].colors}
       layers={${JSON.stringify(landscapeLayers, null, 2)}}
+    />
+  );
+}`
+            : `import { SumiSansui } from '@sumi-forge/react';
+
+export function GenerativeSansuiArtwork() {
+  return (
+    <SumiSansui
+      composition="${sansuiComposition}"
+      seed={${sansuiSeed}}
+      theme="${sansuiTheme}"${
+        sansuiUseCustomColors
+          ? `
+      backgroundColor="${sansuiCustomBg}"
+      inkColor="${sansuiCustomInk}"
+      washColor="${sansuiCustomWash}"`
+          : ''
+      }
+      ridgeLayers={${sansuiLayers}}
+      treeDensity={${sansuiTreeDensity}}
+      mistDensity={${sansuiMistDensity}}
+      showBoat={${sansuiShowBoat}}
+      animated={${sansuiAnimated}}
     />
   );
 }`;
@@ -280,7 +328,7 @@ export function LivingFujiScene() {
           </h1>
         </div>
 
-        {/* 4 Bancadas de Trabalho com Caixas Rough.js */}
+        {/* 5 Bancadas de Trabalho com Caixas Rough.js */}
         <div className="flex flex-wrap items-center gap-2 p-2 bg-[#E6DFD1]/80 border border-[#D5CEC0] rounded-xl">
           {(
             [
@@ -288,6 +336,7 @@ export function LivingFujiScene() {
               { id: 'atelier', label: '2. Atelier com Pressão', icon: 'brush' as const },
               { id: 'vfx', label: '3. Estúdio de Efeitos', icon: 'katana' as const },
               { id: 'landscape', label: '4. Camadas Monte Fuji', icon: 'mountain' as const },
+              { id: 'sansui', label: '5. Gerador Sansui (Seeds)', icon: 'scroll' as const },
             ] as const
           ).map((t, idx) => {
             const active = activeTab === t.id;
@@ -1392,6 +1441,376 @@ export function LivingFujiScene() {
                     color="#11100E"
                   />
                   <span>{copiedId === 'jsx-landscape' ? 'Copiado!' : 'Copiar JSX'}</span>
+                </SumiButton>
+              </div>
+              <pre className="text-xs font-tabular overflow-x-auto leading-relaxed">
+                <code>{generatedJSX}</code>
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          BANCADA 5: GERADOR DE PAISAGENS SANSUI POR SEED (<SumiSansui />)
+          ===================================================================== */}
+      {activeTab === 'sansui' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* Painel de Controles (Esquerda no Desktop, Abaixo do Preview no Mobile) */}
+          <div className="order-2 lg:order-1 lg:col-span-4 border border-[#D5CEC0] bg-[#E6DFD1]/55 rounded-xl p-4 sm:p-5 space-y-4">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h2 className="text-lg font-semibold text-[#11100E]">
+                  Forja Sansui · Montanhas &amp; Águas
+                </h2>
+                <JapaneseCalligraphy
+                  jp="山水"
+                  romaji="Sansui"
+                  pt="Pintura clássica oriental de montanhas, rios e neblina"
+                  variant="hanko"
+                  tooltipPlacement="left"
+                />
+              </div>
+              <p className="text-xs text-[#3F3D39]">
+                Gere paisagens infinitas por seed com hachuras de rocha <em>Cunfa</em>, pinheiros
+                caligráficos, modo noturno e suporte a cores personalizadas ou variáveis CSS do seu
+                tema.
+              </p>
+            </div>
+
+            {/* Semente Determinística */}
+            <div className="p-3 rounded-lg bg-[#F4F1EA] border border-[#D5CEC0] space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-[#11100E]">Semente da Obra (Seed)</span>
+                <span className="font-tabular font-semibold text-[#C8232C]">#{sansuiSeed}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={sansuiSeed}
+                  onChange={(e) => setSansuiSeed(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  className="w-28 px-2.5 py-1.5 text-xs font-tabular rounded-[2px] border border-[#11100E] bg-[#F7F3EB]"
+                />
+                <SumiButton
+                  variant="crimson"
+                  size="xs"
+                  seed={501}
+                  className="flex-1"
+                  onClick={() => setSansuiSeed(Math.floor(1000 + Math.random() * 90000))}
+                >
+                  <SumiIcon name="replay" size={14} color="#11100E" />
+                  <span>Sortear Nova Seed</span>
+                </SumiButton>
+              </div>
+            </div>
+
+            {/* Composição Clássica */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-[#11100E]">
+                Composição Clássica Sansui
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {SANSUI_COMPOSITIONS.map((comp, idx) => {
+                  const active = sansuiComposition === comp.id;
+                  return (
+                    <SumiButton
+                      key={comp.id}
+                      variant={active ? 'ink' : 'washi'}
+                      size="xs"
+                      seed={510 + idx}
+                      active={active}
+                      onClick={() => setSansuiComposition(comp.id)}
+                      className="w-full justify-start"
+                    >
+                      <span className="truncate">{comp.name.split('&')[0].trim()}</span>
+                    </SumiButton>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-[#3F3D39]">
+                {SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition)?.description}
+              </p>
+            </div>
+
+            {/* Tema Atmosférico & Modo Noturno */}
+            <div className="space-y-2 pt-2 border-t border-[#D5CEC0]">
+              <label className="block text-xs font-medium text-[#11100E]">
+                Tema de Pintura &amp; Modo Noturno
+              </label>
+              <select
+                value={sansuiTheme}
+                onChange={(e) => {
+                  setSansuiTheme(e.target.value as SansuiThemeId);
+                  setSansuiUseCustomColors(false);
+                }}
+                className="w-full px-3 py-2 text-xs rounded-[2px] border border-[#11100E] bg-[#F2EDE2]"
+              >
+                {Object.values(SANSUI_THEMES).map((th) => (
+                  <option key={th.id} value={th.id}>
+                    {th.name} ({th.jp}) — {th.subtitle}
+                  </option>
+                ))}
+              </select>
+
+              {/* Customização Livre de Cores */}
+              <div className="pt-1">
+                <label className="flex items-center gap-2 text-xs font-medium text-[#11100E] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sansuiUseCustomColors}
+                    onChange={(e) => setSansuiUseCustomColors(e.target.checked)}
+                    className="accent-[#C8232C]"
+                  />
+                  <span>Sobrescrever com cores livres (props / tema do usuário)</span>
+                </label>
+
+                {sansuiUseCustomColors && (
+                  <div className="grid grid-cols-3 gap-2 mt-2.5 p-2.5 rounded-lg bg-[#F4F1EA] border border-[#D5CEC0]">
+                    <label className="flex flex-col gap-1 text-[11px] text-[#3F3D39]">
+                      <span>Fundo (Papel)</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={sansuiCustomBg}
+                          onChange={(e) => setSansuiCustomBg(e.target.value)}
+                          className="w-7 h-7 rounded cursor-pointer border border-[#11100E]/30"
+                        />
+                        <span className="font-tabular text-[10px]">{sansuiCustomBg}</span>
+                      </div>
+                    </label>
+                    <label className="flex flex-col gap-1 text-[11px] text-[#3F3D39]">
+                      <span>Nanquim (Traço)</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={sansuiCustomInk}
+                          onChange={(e) => setSansuiCustomInk(e.target.value)}
+                          className="w-7 h-7 rounded cursor-pointer border border-[#11100E]/30"
+                        />
+                        <span className="font-tabular text-[10px]">{sansuiCustomInk}</span>
+                      </div>
+                    </label>
+                    <label className="flex flex-col gap-1 text-[11px] text-[#3F3D39]">
+                      <span>Aguada Mineral</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={sansuiCustomWash}
+                          onChange={(e) => setSansuiCustomWash(e.target.value)}
+                          className="w-7 h-7 rounded cursor-pointer border border-[#11100E]/30"
+                        />
+                        <span className="font-tabular text-[10px]">{sansuiCustomWash}</span>
+                      </div>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Parâmetros de Camadas, Pinheiros e Neblina */}
+            <div className="space-y-3 pt-2 border-t border-[#D5CEC0] text-xs">
+              <label className="block">
+                <div className="flex justify-between mb-1">
+                  <span>Planos de Cordilheiras</span>
+                  <span className="font-tabular">{sansuiLayers} planos</span>
+                </div>
+                <input
+                  type="range"
+                  min={2}
+                  max={8}
+                  step={1}
+                  value={sansuiLayers}
+                  onChange={(e) => setSansuiLayers(parseInt(e.target.value, 10))}
+                  className="w-full accent-[#C8232C]"
+                />
+              </label>
+
+              <label className="block">
+                <div className="flex justify-between mb-1">
+                  <span>Densidade de Pinheiros &amp; Árvores</span>
+                  <span className="font-tabular">{Math.round(sansuiTreeDensity * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={2}
+                  step={0.1}
+                  value={sansuiTreeDensity}
+                  onChange={(e) => setSansuiTreeDensity(parseFloat(e.target.value))}
+                  className="w-full accent-[#C8232C]"
+                />
+              </label>
+
+              <label className="block">
+                <div className="flex justify-between mb-1">
+                  <span>Neblina na Base &amp; Linhas d&apos;Água</span>
+                  <span className="font-tabular">{Math.round(sansuiMistDensity * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0.2}
+                  max={1.8}
+                  step={0.1}
+                  value={sansuiMistDensity}
+                  onChange={(e) => setSansuiMistDensity(parseFloat(e.target.value))}
+                  className="w-full accent-[#C8232C]"
+                />
+              </label>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#D5CEC0]">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sansuiShowBoat}
+                    onChange={(e) => setSansuiShowBoat(e.target.checked)}
+                    className="accent-[#C8232C]"
+                  />
+                  <span>Barco Solitário</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sansuiAnimated}
+                    onChange={(e) => setSansuiAnimated(e.target.checked)}
+                    className="accent-[#C8232C]"
+                  />
+                  <span>Deriva Suave na Água</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[#D5CEC0]">
+              <SumiButton
+                variant="ink"
+                size="sm"
+                seed={545}
+                className="w-full"
+                onClick={() => sansuiActionsRef.current?.exportPng()}
+              >
+                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                  <SumiIcon name="download" size={16} color="#11100E" />
+                </span>
+                <span>Baixar Pintura Sansui (PNG)</span>
+              </SumiButton>
+            </div>
+          </div>
+
+          {/* Tela Principal Sansui (Primeira no Mobile para visualização imediata) */}
+          <div className="order-1 lg:order-2 lg:col-span-8 space-y-4">
+            <div className="h-[300px] sm:h-[400px] lg:h-[470px] rounded-xl border border-[#D5CEC0] overflow-hidden relative shadow-xs">
+              <SumiSansui
+                composition={sansuiComposition}
+                seed={sansuiSeed}
+                theme={sansuiTheme}
+                backgroundColor={sansuiUseCustomColors ? sansuiCustomBg : undefined}
+                inkColor={sansuiUseCustomColors ? sansuiCustomInk : undefined}
+                washColor={sansuiUseCustomColors ? sansuiCustomWash : undefined}
+                ridgeLayers={sansuiLayers}
+                treeDensity={sansuiTreeDensity}
+                mistDensity={sansuiMistDensity}
+                showBoat={sansuiShowBoat}
+                animated={sansuiAnimated}
+                actionsRef={sansuiActionsRef}
+              />
+
+              {/* Selo e controles rápidos sobre a pintura */}
+              <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+                <div className="pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F7F3EB]/85 backdrop-blur-md border border-[#D5CEC0] text-xs text-[#11100E]">
+                  <span className="font-semibold">
+                    {SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition)?.jp}
+                  </span>
+                  <span>·</span>
+                  <span>{SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition)?.name}</span>
+                  <span className="font-tabular text-[#C8232C] font-semibold">#{sansuiSeed}</span>
+                </div>
+
+                <div className="pointer-events-auto flex items-center gap-2">
+                  <SumiButton
+                    variant="washi"
+                    size="xs"
+                    seed={560}
+                    onClick={() => setSansuiSeed(Math.floor(1000 + Math.random() * 90000))}
+                  >
+                    <SumiIcon name="replay" size={14} color="#11100E" />
+                    <span>Nova Seed</span>
+                  </SumiButton>
+                </div>
+              </div>
+            </div>
+
+            {/* Galeria Rápida de Exemplos Clicáveis (Inspirados nas 4 Estéticas) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {(
+                [
+                  {
+                    label: 'Horizonte Fluvial',
+                    comp: 'panoramic_river' as const,
+                    theme: 'classic_washi' as const,
+                    seed: 8472,
+                  },
+                  {
+                    label: 'Picos Escarpados',
+                    comp: 'karst_peaks' as const,
+                    theme: 'classic_washi' as const,
+                    seed: 31904,
+                  },
+                  {
+                    label: 'Vale Mineral Jade',
+                    comp: 'layered_valley' as const,
+                    theme: 'jade_mineral' as const,
+                    seed: 52180,
+                  },
+                  {
+                    label: 'Obsidiana Noturna',
+                    comp: 'twin_gorges' as const,
+                    theme: 'night_obsidian' as const,
+                    seed: 77412,
+                  },
+                ] as const
+              ).map((preset, idx) => (
+                <SumiButton
+                  key={preset.label}
+                  variant={
+                    sansuiComposition === preset.comp &&
+                    sansuiTheme === preset.theme &&
+                    !sansuiUseCustomColors
+                      ? 'crimson'
+                      : 'washi'
+                  }
+                  size="xs"
+                  seed={570 + idx}
+                  onClick={() => {
+                    setSansuiComposition(preset.comp);
+                    setSansuiTheme(preset.theme);
+                    setSansuiSeed(preset.seed);
+                    setSansuiUseCustomColors(false);
+                  }}
+                  className="w-full"
+                >
+                  <span>{preset.label}</span>
+                </SumiButton>
+              ))}
+            </div>
+
+            {/* Código JSX pronto para copiar */}
+            <div className="border border-[#D5CEC0] rounded-xl bg-[#11100E] text-[#F2EDE2] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-stone-800 text-xs">
+                <span className="font-tabular text-stone-400">
+                  Componente &lt;SumiSansui /&gt; pronto para copiar
+                </span>
+                <SumiButton
+                  variant="washi"
+                  size="xs"
+                  seed={599}
+                  onClick={() => handleCopy(generatedJSX, 'jsx-sansui')}
+                >
+                  <SumiIcon
+                    name={copiedId === 'jsx-sansui' ? 'check' : 'copy'}
+                    size={15}
+                    color="#11100E"
+                  />
+                  <span>{copiedId === 'jsx-sansui' ? 'Copiado!' : 'Copiar JSX'}</span>
                 </SumiButton>
               </div>
               <pre className="text-xs font-tabular overflow-x-auto leading-relaxed">

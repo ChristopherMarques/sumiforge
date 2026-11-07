@@ -1,86 +1,117 @@
-# @sumi-forge/react — Experiência Samurai Sengoku, Cerimônia de Abertura Monte Fuji & Scroll-Driven Painting com GSAP
+# Motor Gerativo de Paisagens Sansui (`<SumiSansui />`) para `@sumi-forge/react`
 
-Reimaginação completa da Landing Page como uma experiência autoral **Samurai Sengoku**, onde a obra do **Monte Fuji, Sakura e Sol Vermelho** protagoniza a cerimônia de abertura (loading artístico em tela cheia) e permanece viva como background interativo da Hero, seguida por uma narrativa de pergaminho (*Emakimono*) controlada por **GSAP + ScrollTrigger** em que cada seção é literalmente pintada ou cortada a lâmina usando uma técnica diferente do pacote `@sumi-forge/react`.
+Criação de um motor 100% próprio e nativo de pintura de paisagens orientais **Sansui / Shan-Shui (山水 · Montanhas e Águas)** controlado por semente determinística (`seed`), capaz de gerar composições infinitas de picos escarpados, vales em múltiplas camadas de neblina, rios panorâmicos com barcos solitários e pinheiros nas encostas, adaptando-se automaticamente ao tema do usuário, a paletas tradicionais (incluindo **Modo Noturno** e **Verde Mineral Jade**) ou a qualquer cor customizada via props ou variáveis CSS.
 
 ---
 
-## User Review & Critical Decisions
+### User Review & Critical Decisions
 
 > [!IMPORTANT]
-> As decisões abaixo consolidam o novo fluxo de abertura, o scroll-reveal com GSAP e a direção de arte Samurai Sengoku confirmados por você.
+> As decisões abaixo refletem exatamente as escolhas confirmadas por você e definem o escopo de construção após a aprovação deste plano:
 
-- **Decisão Confirmada 1 — Cerimônia de Abertura Full-Screen → Background Vivo da Hero**:
-  - Ao abrir o site, a tela inteira (`100vw × 100vh`) funciona como uma folha de papel Washi Sengoku onde o próprio pacote pinta diante dos olhos do visitante a obra do **Monte Fuji, Sakura e Sol Vermelho** (usando a fusão de `<SumiMaskReveal />` sobre a arte de referência `/assets/aistudio/image_8f7809d3.png` + a cena procedural `<SumiLandscape />`), acompanhada de um selo *Hanko* vermelho e indicador caligráfico de progresso.
-  - Assim que a pintura se completa (~2.8s, com botão discreto para repetir a cerimônia quando quiser), um golpe de Katana revela a tipografia principal, o comando `npm i @sumi-forge/react` e um controle flutuante retrátil de camadas, enquanto a pintura do Monte Fuji continua viva no fundo da Hero (com pétalas de cerejeira sopradas pelo vento, reflexos no lago e parallax GSAP ao rolar).
-- **Decisão Confirmada 2 — Pergaminho Samurai com GSAP ScrollTrigger (Cada Seção Pintada por uma Técnica)**:
-  - Cada seção subsequente da Landing Page utiliza o próprio pacote sincronizado com o scroll do GSAP para se desenhar na tela:
-    1. **Ato I — O Corte da Katana (`Técnicas #03 Kasure & #04 Erosão Sakuga`)**: Um golpe diagonal de espada multi-cerdas rasga a tela conforme o scroll desce, revelando a suíte dos 5 componentes React instaláveis (`SumiMaskReveal`, `SumiLandscape`, `SumiBrushCanvas`, `SumiStroke`, `SumiVFX`).
-    2. **Ato II — A Maré de Hokusai & A Chama Suibokuga (`Técnicas #06 Grande Onda, #05 Pétalas de Fogo S-Curve & #08 Bólido Oclusivo`)**: Cristas de onda *Ukiyo-e* com garras de espuma e correntes listradas pintam as margens em parallax enquanto chamas aquareladas demonstram o poder de revelar cards e imagens com máscaras elementais.
-    3. **Ato III — O Pergaminho das 12 Técnicas & Névoa Kumo (`Técnicas #07 Nuvens Kumo C-Hook, #09 Aguada Tarashikomi, #10 Rough.js & #11 Shader 3 Canais`)**: Volutas de fumaça oriental se abrem no scroll para exibir o Códice Mestre das 12 Técnicas Procedurais e as 10 Escolas de Magia com demonstração ao vivo.
-- **Decisão Confirmada 3 — Estética Samurai Sengoku & Rodapé "Japa.... ops, Brazil"**:
-  - Papel Washi envelhecido com textura orgânica, nanquim abissal denso (`#11100E`), vermelhão lacado de armadura/selo Hanko (`#C8232C`), detalhes em ouro velho (`#B48A3E`), marcadores editoriais verticais e, no encerramento do pergaminho, a assinatura bem-humorada com um traço de pincel riscando a palavra: **"Made with love in ~~Japa....~~ ops, Brazil"**.
-
----
-
-## 1. Overview & Core Concept
-
-- **O Que Faz**: Apresenta a biblioteca `@sumi-forge/react` não como uma documentação estática, mas como uma obra de arte interativa onde **100% dos efeitos de abertura, fundos de seção, divisores, máscaras de imagem e transições de scroll são renderizados pelo próprio pacote**.
-- **Experiência Visual**: Une a atmosfera dramática do Japão Feudal (caligrafia de espada *Kenjutsu*, xilogravuras *Ukiyo-e* e pergaminhos *Sumi-e*) com engenharia web moderna (GSAP ScrollTrigger + Canvas 2D determinístico + CSS Masking).
-
----
-
-## 2. User Experience & Visual Design
-
-### Key User Flows
-
-1. **Ato 0 — Cerimônia de Tinta (Loading Artístico Full-Screen → Hero Background)**:
-   - O visitante vê o papel Washi receber o impacto inicial do pincel: o Sol Vermelho sangra no papel em aguada *Tarashikomi*, as vertentes do Monte Fuji são riscadas com cerdas secas *Kasure*, o tronco negro de cerejeira serpenteia da esquerda desabrochando dezenas de flores vermelhas, e a neblina *Kumo* assenta sobre o lago.
-   - Quando a pintura atinge 100%, a câmera realiza um sutil assentamento GSAP e a tipografia editorial da Hero surge com contraste impecável sobre uma área de respiro caligráfico (*Ma*), mantendo toda a obra visível, responsiva e animada no fundo.
-   - Um botão **"Rever Cerimônia de Pintura"** e um drawer compacto **"Ajustar Camadas & Máscara do Fuji"** permitem ao visitante brincar com o background da Hero sem poluir a composição.
-2. **Ato I — O Golpe da Lâmina (Os 5 Componentes do Pacote)**:
-   - Ao rolar a página, o `ScrollTrigger` do GSAP aciona uma fita caligráfica gigante (`<SumiStroke />` + `<SumiMaskReveal />`) que corta a transição entre a Hero e a primeira seção.
-   - Os 5 componentes exportados pelo pacote são exibidos em painéis de pergaminho Sengoku com demonstrações interativas ao vivo e snippets prontos para `npm` / `pnpm` / `yarn`.
-3. **Ato II — Duelo de Água & Fogo (Demonstração de CSS Mask e Paralaxe Procedural)**:
-   - Conforme o usuário continua rolando, ondas de *Hokusai* com garras de espuma e pétalas de fogo *Suibokuga* entram em parallax nas bordas e pintam progressivamente retratos e cenas com `<SumiMaskReveal />`, provando como qualquer desenvolvedor pode usar os pincéis da biblioteca para revelar fotos, banners e cards no scroll.
-4. **Ato III — O Códice Samurai das 12 Técnicas & 10 Escolas**:
-   - Emoldurado por bancos de nuvens *Kumo* em C-Hook e manchas *Tarashikomi*, o usuário explora cada uma das 12 técnicas matemáticas do motor, troca a Escola de Magia em tempo real e pode saltar com 1 clique para o **Playground Studio** completo (com as 4 bancadas de criação e exportação JSX/GIF89a/Sprite Sheet 4×4).
-5. **Encerramento & Rodapé**:
-   - Um grande selo *Ensō* caligráfico se fecha no scroll final, acompanhado do rodapé com o easter egg caligráfico: **"Made with love in ~~Japa....~~ ops, Brazil"**.
+- **Componente Versátil com 4 Composições Clássicas (`<SumiSansui />`)**:
+  1. **`panoramic_river` (Horizonte Fluvial & Barco Solitário)**: Grande extensão de águas serenas com linhas de correnteza horizontais, ilhas distantes na neblina, promontório rochoso em primeiro plano com árvores retorcidas e um pescador solitário em seu barco (*sampan*).
+  2. **`karst_peaks` (Picos Escarpados de Guilin)**: Torres montanhosas verticais dramáticas emergindo da água, com fissuras internas de rocha (*Cunfa* · 皴法), pinheiros agarrados às escarpas e picos fantasmas ao fundo.
+  3. **`layered_valley` (Vale das Cinco Neblinas)**: Cadeias de colinas e montanhas sobrepostas em 5 a 7 planos de profundidade atmosférica, com grupos de pinheiros nas cristas e bancos de neblina entre os vales.
+  4. **`twin_gorges` (Desfiladeiro Espelhado & Travessia)**: Duas grandes massas montanhosas laterais emoldurando um canal central profundo por onde desliza a embarcação.
+- **Sistema de Cores, Temas Prontos e Modo Noturno (`theme` + `customColors` + CSS Variables)**:
+  - **5 Temas Prontos**:
+    - `classic_washi`: Papel Washi envelhecido (`#EFECE4`), nanquim denso (`#141413`) e aguadas cinza-carvão.
+    - `jade_mineral` (*Qinglü Shanshui* · 青綠山水): Papel seda aquecido com aguadas de verde-celadon/jade mineral (`#5E7A68`) nas encostas e nanquim nos contornos.
+    - `night_obsidian` (*Yakō Sansui* · 夜行山水 / **Modo Noturno**): Céu e águas em obsidiana profunda (`#121316`), contornos das cristas em giz prateado/marfim (`#EAE4D7`) e preenchimento escuro esfumaçado nas montanhas.
+    - `crimson_dawn` (*Akatsuki* · 暁): Atmosfera de alvorada com aguadas carmesim suave (`#B83B40`) e nanquim.
+    - `auto_theme`: Lê automaticamente variáveis CSS do projeto do usuário (`--sumi-bg`, `--sumi-ink`, `--sumi-wash`, `--sumi-accent`, `--sumi-mist`) ou adapta-se à classe `.dark` da aplicação hospedeira.
+  - **Cores Livres via Props**: O desenvolvedor pode passar qualquer cor hexadecimal ou `rgb/hsl` em `backgroundColor`, `inkColor`, `washColor`, `mistColor` e `accentColor` para combinar com a identidade visual do seu site.
+- **Demonstração na Landing Page e no Playground Studio**:
+  - **Nova Seção na Landing Page (`03 · Paisagens Gerativas Sansui por Seed`)**: Exibe um banner panorâmico vivo acompanhado por uma grade interativa de 3 cartões (Picos Escarpados, Vale Verde Mineral e Modo Noturno Obsidiana), com botões para sortear novas sementes (`seed`) e alternar temas em tempo real.
+  - **Nova Bancada no Playground Studio (`5. Gerador Sansui (Seeds)`)**: Estúdio completo para explorar sementes infinitas, alternar entre as 4 composições, escolher temas ou cores personalizadas, ajustar densidade de árvores/rochas/neblina, exportar a pintura em **PNG de alta resolução** e copiar o snippet JSX pronto.
 
 ---
 
-## 3. Technical Architecture & GSAP Scroll Choreography
+### 1. Overview & Core Concept
+
+- **What It Does**: Adiciona ao pacote `@sumi-forge/react` um gerador determinístico de pinturas de paisagem *Sansui* (山水) que constrói montanhas, texturas de rocha, árvores, águas e barcos inteiramente por algoritmos matemáticos e traços caligráficos em `<canvas>` com cache offscreen de alta performance.
+- **Target Audience / Persona**: Desenvolvedores e designers React que desejam fundos de seção, cabeçalhos panorâmicos, cartões temáticos (Light/Dark mode) ou divisores de página com estética oriental autêntica que nunca se repetem e pesam poucos kilobytes.
+- **Key Value**: Diferente de ilustrações estáticas ou bibliotecas externas limitadas, o `<SumiSansui />` integra-se ao ecossistema `@sumi-forge/react`, suporta animação sutil de neblina/água e barco, desenha a cena gradualmente se desejado e aceita qualquer paleta de cores do usuário.
+
+---
+
+### 2. User Experience & Visual Design
+
+- **Key User Flows**:
+  1. **Descoberta na Landing Page**: Ao rolar até a seção **Paisagens Gerativas Sansui**, o visitante vê o grande panorama fluvial no topo e os 3 cartões demonstrando o contraste entre o estilo clássico Washi, o Verde Mineral Jade e o Modo Noturno Obsidiana. Com um clique em **"Sortear Nova Paisagem (Seed)"** ou nos seletores de paleta, todas as montanhas e ilhas se reconfiguram instantaneamente.
+  2. **Experimentação e Exportação no Playground**: Na nova aba **5. Gerador Sansui**, o usuário escolhe a composição (`panoramic_river`, `karst_peaks`, `layered_valley`, `twin_gorges`), digita ou sorteia uma `seed`, personaliza as cores (ou ativa o Modo Noturno), controla a quantidade de árvores, barcos e neblina, baixa o PNG ou copia o código `<SumiSansui />`.
+- **Visual Identity & Theme**:
+  - *Técnicas Tradicionais Codificadas*:
+    - **Cunfa (皴法 · Hachuras de Textura de Rocha)**: Traços verticais e diagonais irregulares no interior das montanhas que dão volume tridimensional às escarpas.
+    - **Contorno Caligráfico de Crista**: Linha superior mais espessa e expressiva no pico da montanha que afila conforme desce para o vale.
+    - **Gradiente de Neblina na Base**: Cada camada de montanha dissolve-se suavemente na neblina em sua base antes que a camada mais próxima seja pintada por cima.
+    - **Pinheiros e Árvores de Encosta**: Troncos orgânicos com agulhas horizontais ou folhagem pontilhada em nanquim posicionados estrategicamente nas fendas e promontórios.
+- **Interactive Feedback & Motion**:
+  - Animação opcional de baixa potência (`animated`): ondulações calmas na água, leve deriva do barco solitário e deslocamento sutil da neblina entre os picos, utilizando cache offscreen da cadeia montanhosa para manter **60/120 FPS cravados** em qualquer dispositivo.
+
+---
+
+### 3. Key Product Decisions & Trade-Offs
+
+- **Decision 1: Motor Próprio em Canvas 2D com Cache Offscreen das Montanhas**
+  - *Chosen Approach*: Renderizar as camadas de montanhas, hachuras *Cunfa* e árvores em um buffer offscreen sempre que a `seed`, `composition` ou paleta mudar, e compor a água/barco/neblina em cima no loop principal.
+  - *Why*: Gerar centenas de hachuras de rocha e folhagens de pinheiros leva cerca de 4ms na criação inicial, mas com o cache offscreen o custo por frame durante o scroll ou animação cai para **menos de 0.15ms**, mantendo fluidez absoluta no celular e desktop.
+  - *Alternatives Considered*: Gerar milhares de nós DOM `<svg>` (descartado porque sobrecarrega o DOM quando múltiplos cartões são exibidos simultaneamente na página).
+- **Decision 2: Suporte Híbrido a Temas Prontos, Modo Noturno e Cores Customizadas**
+  - *Chosen Approach*: Oferecer uma prop `theme` (`'classic_washi' | 'jade_mineral' | 'night_obsidian' | 'crimson_dawn' | 'auto'`) combinada com uma prop opcional `colors` (`{ background, ink, wash, mist, accent }`) que sobrescreve qualquer canal individualmente.
+  - *Why*: Permite uso imediato com 1 linha de código (`<SumiSansui composition="karst_peaks" theme="night_obsidian" />`) e, ao mesmo tempo, dá controle total para quem quer aplicar a cor primária da própria marca nas aguadas das montanhas.
+
+---
+
+### 4. Technical Architecture & Data Strategy *(Technical Reference)*
+
+- **Architecture & Component Diagram**:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                     Landing Page Samurai Sengoku (GSAP + SumiForge)                 │
-├─────────────────────────────────────────────────────────────────────────────────────┤
-│  [1. Opening Ink Ceremony & Hero Full-Bleed Background (100vh)]                     │
-│   ├── <SumiMaskReveal src="/assets/aistudio/image_8f7809d3.png" />                  │
-│   ├── <SumiLandscape /> (Live Fuji, Crimson Sun, Sakura Petals & Kumo Mist)         │
-│   ├── GSAP Timeline: Paint Progress (0 -> 100%) ──► Katana Slash UI Reveal          │
-│   └── Collapsible Layer & Mode Drawer (Hybrid / Pure CSS Mask / Pure Procedural)    │
-│                                         │                                           │
-│                                  (GSAP ScrollTrigger)                               │
-│                                         ▼                                           │
-│  [2. Act I: Blade of the 5 Components — Painted by Technique #03 Kasure & #04]      │
-│   ├── Scroll-driven diagonal Katana brushstroke divider                             │
-│   └── Live Bento Showcase of <SumiMaskReveal>, <SumiBrushCanvas>, <SumiVFX>, etc.   │
-│                                         │                                           │
-│                                  (GSAP ScrollTrigger)                               │
-│                                         ▼                                           │
-│  [3. Act II: Tide & Flame Parallax — Painted by Technique #06 Hokusai & #05 Flame]  │
-│   ├── Scroll-linked Hokusai Great Wave Crests & Foam Claws canvas backdrop          │
-│   └── Interactive CSS Mask Gallery revealing artwork with Water, Fire & Sakura      │
-│                                         │                                           │
-│                                  (GSAP ScrollTrigger)                               │
-│                                         ▼                                           │
-│  [4. Act III: The 12 Techniques Codex — Painted by Technique #07 Kumo & #09 Wash]   │
-│   ├── Kumo Cloud C-Hook scrolls parting on scroll + Tarashikomi pigment blooms      │
-│   └── Interactive 12-Technique & 10-School Inspector + Direct Jump to Playground    │
-│                                         │                                           │
-│                                         ▼                                           │
-│  [5. Enso Seal Finale & Footer]                                                     │
-│   └── "Made with love in Japa.... ops, Brazil" with calligraphic strike-through     │
-└─────────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                         @sumi-forge/react Library                         │
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │                    <SumiSansui /> Component                         │  │
+│  │  Props: seed, composition, theme, colors, ridgeLayers, treeDensity, │  │
+│  │         showBoat, mistDensity, animated, revealProgress             │  │
+│  └──────────────────────────────────┬──────────────────────────────────┘  │
+│                                     │                                     │
+│                                     ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │               Procedural Sansui Engine (sansuiEngine.ts)            │  │
+│  ├─────────────────────────────────────────────────────────────────────┤  │
+│  │  1. Ridge Silhouette Generator (1D FBM + Karst Power Shaping)       │  │
+│  │  2. Atmospheric Wash & Base Mist Dissolve (Multi-Stop Gradient)     │  │
+│  │  3. Cunfa Rock Texture Strokes (皴法 Inner Contour Fissures)         │  │
+│  │  4. Variable-Width Calligraphic Ridge Spine                         │  │
+│  │  5. Cliffside Pines & Gnarled Promontory Trees Generator            │  │
+│  │  6. Water Ripples & Solitary Sampan Boat Renderer                   │  │
+│  └──────────────────────────────────┬──────────────────────────────────┘  │
+│                                     │                                     │
+└─────────────────────────────────────┼─────────────────────────────────────┘
+                                      │
+                   ┌──────────────────┴──────────────────┐
+                   ▼                                     ▼
+┌─────────────────────────────────────┐ ┌───────────────────────────────────┐
+│        LandingView Showcase         │ │      PlaygroundView Workbench     │
+│  • Banner Panorâmico + 3 Cartões    │ │  • Bancada "5. Gerador Sansui"    │
+│    (Karst, Vale Jade, Modo Noturno) │ │  • Sorteador de Seeds & Cores     │
+│  • Sorteador Rápido de Seeds        │ │  • Exportação PNG & Copiar JSX    │
+└─────────────────────────────────────┘ └───────────────────────────────────┘
 ```
+
+- **Data Model & State**:
+  - `SansuiComposition`: `'panoramic_river' | 'karst_peaks' | 'layered_valley' | 'twin_gorges'`
+  - `SansuiThemeId`: `'classic_washi' | 'jade_mineral' | 'night_obsidian' | 'crimson_dawn' | 'auto'`
+  - `SansuiColors`:
+    - `background`: Cor do papel/céu (ex: `#EFECE4` no modo claro ou `#121316` no modo noturno)
+    - `ink`: Cor do contorno caligráfico das cristas, barcos e árvores (ex: `#181715` no modo claro ou `#EAE4D7` no modo noturno)
+    - `wash`: Cor da aguada mineral ou sombreado das encostas (ex: `#5E7A68` no tema Jade ou `#2B2D33` no modo noturno)
+    - `mist`: Cor da neblina que dissolve a base das montanhas e separa os planos
+    - `accent`: Detalhe sutil opcional (selo ou folhagem)
+- **Interactive Component & State Mapping**:
+  - Na **Landing Page**: Botões para alternar a semente (`seed`) e testar os temas (`Clássico Washi`, `Verde Mineral`, `Modo Noturno`, `Alvorada Carmesim`) atualizam os cartões instantaneamente; clicar em **"Abrir Gerador Sansui no Playground"** abre diretamente a nova bancada com a composição selecionada.
+  - No **Playground Studio**: Controles deslizantes e seletores de cor atualizam a pré-visualização em tempo real, geram o código JSX exato para cópia e permitem baixar a pintura gerada em PNG.

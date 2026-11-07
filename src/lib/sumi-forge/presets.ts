@@ -1,4 +1,138 @@
-import { ArchetypeId, MagicSchool, SchoolId, SumiLayerIntensities, TechniqueSpec, VFXConfig } from './types';
+import {
+  ArchetypeId,
+  MagicSchool,
+  SansuiComposition,
+  SansuiThemeId,
+  SansuiThemePreset,
+  SchoolId,
+  SumiLayerIntensities,
+  TechniqueSpec,
+  VFXConfig,
+} from './types';
+
+export const SANSUI_THEMES: Record<Exclude<SansuiThemeId, 'auto'>, SansuiThemePreset> = {
+  classic_washi: {
+    id: 'classic_washi',
+    name: 'Washi Clássico & Nanquim',
+    jp: '水墨山水',
+    romaji: 'Suiboku Sansui',
+    subtitle: 'Papel Washi envelhecido, nanquim tradicional e aguadas de carvão',
+    isDark: false,
+    colors: {
+      background: '#EFECE4',
+      ink: '#181715',
+      wash: '#524E46',
+      mist: '#EFECE4',
+      accent: '#C8232C',
+    },
+  },
+  jade_mineral: {
+    id: 'jade_mineral',
+    name: 'Verde Mineral & Jade',
+    jp: '青緑山水',
+    romaji: 'Seiryoku Sansui',
+    subtitle: 'Estilo imperial com pigmento mineral verde-celadon nas encostas',
+    isDark: false,
+    colors: {
+      background: '#EDE8DC',
+      ink: '#1A211E',
+      wash: '#527361',
+      mist: '#EDE8DC',
+      accent: '#3B6E52',
+    },
+  },
+  night_obsidian: {
+    id: 'night_obsidian',
+    name: 'Noite Obsidiana (Dark Mode)',
+    jp: '夜行山水',
+    romaji: 'Yakō Sansui',
+    subtitle: 'Céu noturno em carvão profundo com cristas iluminadas em marfim',
+    isDark: true,
+    colors: {
+      background: '#141518',
+      ink: '#E8E2D5',
+      wash: '#2A2D34',
+      mist: '#141518',
+      accent: '#C8232C',
+    },
+  },
+  crimson_dawn: {
+    id: 'crimson_dawn',
+    name: 'Alvorada Carmesim',
+    jp: '暁山水',
+    romaji: 'Akatsuki Sansui',
+    subtitle: 'Bruma matinal aquecida por aguadas de vermelhão e cinza-pedra',
+    isDark: false,
+    colors: {
+      background: '#F2ECE4',
+      ink: '#1D1817',
+      wash: '#944347',
+      mist: '#F2ECE4',
+      accent: '#C8232C',
+    },
+  },
+  cobalt_porcelain: {
+    id: 'cobalt_porcelain',
+    name: 'Azul Índigo & Porcelana',
+    jp: '藍染山水',
+    romaji: 'Aizome Sansui',
+    subtitle: 'Tons serenos de índigo oriental sobre papel de arroz claro',
+    isDark: false,
+    colors: {
+      background: '#EDF0F2',
+      ink: '#101C29',
+      wash: '#3B5C7A',
+      mist: '#EDF0F2',
+      accent: '#1E4E79',
+    },
+  },
+};
+
+export const SANSUI_COMPOSITIONS: {
+  id: SansuiComposition;
+  name: string;
+  jp: string;
+  romaji: string;
+  ptMeaning: string;
+  description: string;
+}[] = [
+  {
+    id: 'panoramic_river',
+    name: 'Horizonte Fluvial & Barco Solitário',
+    jp: '江湖遠景',
+    romaji: 'Kōko Enkei',
+    ptMeaning: 'Águas tranquilas que se estendem até o horizonte infinito',
+    description:
+      'Grande espelho d’água com ondulações calmas, ilhas distantes na neblina, promontório rochoso em primeiro plano e pescador solitário.',
+  },
+  {
+    id: 'karst_peaks',
+    name: 'Picos Escarpados & Abismo',
+    jp: '奇峰聳立',
+    romaji: 'Kihō Shōritsu',
+    ptMeaning: 'Picos extraordinários que se erguem com majestade acima das nuvens',
+    description:
+      'Torres verticais dramáticas com fissuras de rocha Cunfa, pinheiros agarrados às escarpas e silhuetas fantasmas ao fundo.',
+  },
+  {
+    id: 'layered_valley',
+    name: 'Vale das Cinco Neblinas',
+    jp: '重巒畳嶂',
+    romaji: 'Jūran Jōshō',
+    ptMeaning: 'Cordilheiras sobrepostas em harmonia profunda entre o céu e a terra',
+    description:
+      'Cinco a sete camadas de colinas e montanhas entrelaçadas com aguada mineral, matas de pinheiros nas cristas e neblina nos vales.',
+  },
+  {
+    id: 'twin_gorges',
+    name: 'Desfiladeiro Noturno & Travessia',
+    jp: '峡谷孤舟',
+    romaji: 'Kyōkoku Koshū',
+    ptMeaning: 'A travessia serena entre grandes paredes de rocha milenar',
+    description:
+      'Picos imponentes flanqueando um canal profundo com ilha de pinheiros em primeiro plano, perfeito tanto em papel claro quanto no Modo Noturno.',
+  },
+];
 
 export const MAGIC_SCHOOLS: Record<SchoolId, MagicSchool> = {
   fuji_sakura: {

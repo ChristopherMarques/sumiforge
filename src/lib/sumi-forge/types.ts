@@ -154,3 +154,41 @@ export type MaskChoreography =
   | 'enso_spiral'
   | 'hokusai_tide'
   | 'interactive_brush';
+
+export type SansuiComposition =
+  | 'panoramic_river'
+  | 'karst_peaks'
+  | 'layered_valley'
+  | 'twin_gorges';
+
+export type SansuiThemeId =
+  | 'classic_washi'
+  | 'jade_mineral'
+  | 'night_obsidian'
+  | 'crimson_dawn'
+  | 'cobalt_porcelain'
+  | 'auto';
+
+export interface SansuiColors {
+  /** Cor do papel / céu e extensão das águas */
+  background: string;
+  /** Cor principal do nanquim / contorno caligráfico das cristas, árvores e barco */
+  ink: string;
+  /** Cor da aguada mineral ou sombreado interno das montanhas */
+  wash: string;
+  /** Cor da neblina atmosférica que separa os planos de profundidade */
+  mist: string;
+  /** Cor de acento opcional (folhagem, sol discreto ou selo) */
+  accent: string;
+}
+
+export interface SansuiThemePreset {
+  id: Exclude<SansuiThemeId, 'auto'>;
+  name: string;
+  jp: string;
+  romaji: string;
+  subtitle: string;
+  isDark?: boolean;
+  colors: SansuiColors;
+}
+

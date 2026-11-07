@@ -97,7 +97,46 @@ export function ProductHeroArtwork() {
 
 ---
 
-### 2. `<SumiLandscape />` · Paisagem 100% Procedural do Monte Fuji & Sakura
+### 2. `<SumiSansui />` · Paisagens Gerativas *Sansui* por Seed & Tema
+
+Gera pinturas orientais de montanhas e águas (*Shan-Shui* / *Sansui* 山水) 100% procedurais e determinísticas por `seed`, com cristas caligráficas variáveis, hachuras internas de rocha (*Cunfa* 皴法), neblina na base das montanhas, pinheiros em nanquim e barco solitário. Adapta-se a temas prontos, **Modo Noturno** (`night_obsidian`), **Cores Personalizadas** ou **Variáveis CSS** do seu projeto (`theme="auto"`).
+
+```tsx
+import { SumiSansui } from '@sumi-forge/react';
+
+export function GenerativeSansuiBanner() {
+  return (
+    <div className="w-full h-[380px] rounded-2xl overflow-hidden">
+      <SumiSansui
+        composition="panoramic_river" // 'panoramic_river' | 'karst_peaks' | 'layered_valley' | 'twin_gorges'
+        seed={8472}
+        theme="jade_mineral" // 'classic_washi' | 'jade_mineral' | 'night_obsidian' | 'crimson_dawn' | 'cobalt_porcelain' | 'auto'
+        ridgeLayers={5}
+        treeDensity={1.0}
+        mistDensity={1.0}
+        showBoat={true}
+        animated={true}
+      />
+    </div>
+  );
+}
+```
+
+| Propriedade | Tipo | Padrão | Descrição |
+| :--- | :--- | :--- | :--- |
+| `composition` | `SansuiComposition` | `'panoramic_river'` | Composição estrutural (`'panoramic_river'`, `'karst_peaks'`, `'layered_valley'`, `'twin_gorges'`). |
+| `seed` | `number` | `8472` | Semente numérica determinística: a mesma seed recria exatamente a mesma cordilheira e vegetação. |
+| `theme` | `SansuiThemeId` | `'classic_washi'` | Paleta pronta (`'classic_washi'`, `'jade_mineral'`, `'night_obsidian'`, `'crimson_dawn'`, `'cobalt_porcelain'`) ou `'auto'` (lê `--sumi-bg`, `--sumi-ink`, `--sumi-wash` e `.dark`). |
+| `backgroundColor` | `string` | `undefined` | Sobrescreve livremente a cor de fundo do pergaminho. |
+| `inkColor` | `string` | `undefined` | Sobrescreve livremente a cor dos traços de contorno, hachuras e árvores. |
+| `washColor` | `string` | `undefined` | Sobrescreve livremente a cor da aguada mineral interna das montanhas. |
+| `ridgeLayers` | `number` | `5` | Quantidade de planos atmosféricos de montanhas (2 a 8). |
+| `treeDensity` | `number` | `1.0` | Densidade de pinheiros e árvores caligráficas nas encostas (0.0 a 2.0). |
+| `showBoat` | `boolean` | `true` | Exibe a embarcação solitária deslizando nas águas calmas. |
+
+---
+
+### 3. `<SumiLandscape />` · Paisagem 100% Procedural do Monte Fuji & Sakura
 
 Renderiza a cena viva do Monte Fuji, Sol Vermelho, Ilha de Pinheiros e Galho de Cerejeira com pétalas reagindo à brisa e ao cursor/toque.
 

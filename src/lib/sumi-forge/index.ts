@@ -13,4 +13,6 @@ export * from './components/SumiSectionPainter';
 export * from './components/SumiIcon';
 export * from './components/SumiButton';
 export * from './components/JapaneseCalligraphy';
+export * from './components/SumiSansui';
+
 

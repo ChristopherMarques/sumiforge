@@ -19,7 +19,7 @@ import {
 export default function App() {
   const [currentView, setCurrentView] = useState<'landing' | 'playground'>('landing');
   const [playgroundInitialTab, setPlaygroundInitialTab] = useState<
-    'mask' | 'atelier' | 'vfx' | 'landscape'
+    'mask' | 'atelier' | 'vfx' | 'landscape' | 'sansui'
   >('mask');
   const [playgroundArchetype, setPlaygroundArchetype] = useState<ArchetypeId | undefined>(
     undefined
@@ -68,7 +68,7 @@ export default function App() {
   }, [isScrolled]);
 
   const handleOpenPlayground = (
-    tab: 'mask' | 'atelier' | 'vfx' | 'landscape' = 'mask',
+    tab: 'mask' | 'atelier' | 'vfx' | 'landscape' | 'sansui' = 'mask',
     archetype?: string
   ) => {
     setIsScrolled(false);
@@ -101,7 +101,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col washi-surface text-[#11100E] dark:text-stone-100">
       {/* Navbar Fixa: 100% Transparente no topo e pintada por uma faixa de pergaminho Washi e Sakura no scroll */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between gap-3 sm:gap-5 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 min-h-16 py-2 md:py-0 md:h-16 flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 gap-x-2 sm:gap-x-4 px-3 sm:px-6 lg:px-8 transition-all duration-300 ${
           isScrolled ? 'backdrop-blur-md' : ''
         }`}
       >
@@ -119,7 +119,7 @@ export default function App() {
         <button
           onClick={() => handleNavigateSection()}
           title="SumiForge · 墨 (Sumi: A arte viva do nanquim)"
-          className="relative z-10 flex items-center gap-2 sm:gap-2.5 text-lg sm:text-xl font-bold tracking-tight whitespace-nowrap shrink-0 font-editorial text-[#11100E] cursor-pointer group"
+          className="order-1 relative z-10 flex items-center gap-2 sm:gap-2.5 text-lg sm:text-xl font-bold tracking-tight whitespace-nowrap shrink-0 font-editorial text-[#11100E] cursor-pointer group"
         >
           <SumiBrandEmblem
             size={34}
@@ -128,8 +128,11 @@ export default function App() {
           <span>SumiForge</span>
         </button>
 
-        {/* Zone 2: Links de navegação com fundo translúcido Washi para leitura nítida sobre os galhos */}
-        <nav className="relative z-10 hidden lg:flex items-center gap-2 bg-[#F8F4EC]/75 backdrop-blur-md px-2 py-1 rounded-[2px] border border-white/70">
+        {/* Zone 2: Menu de Navegação Sempre Visível (em linha no Desktop/Tablet/Notebook e em barra compacta no Mobile) */}
+        <nav
+          aria-label="Navegação Principal"
+          className="order-3 md:order-2 w-full md:w-auto relative z-10 flex items-center justify-start md:justify-center gap-1 lg:gap-1.5 overflow-x-auto bg-[#F8F4EC]/85 backdrop-blur-md px-2 py-1 rounded-[2px] border border-white/80 shadow-[0_2px_12px_rgba(17,16,14,0.05)]"
+        >
           <SumiButton
             variant="ghost"
             size="xs"
@@ -158,14 +161,22 @@ export default function App() {
             variant="ghost"
             size="xs"
             seed={14}
-            onClick={() => handleOpenPlayground('mask')}
+            onClick={() => handleNavigateSection('paisagens-sansui')}
+          >
+            Paisagens Sansui
+          </SumiButton>
+          <SumiButton
+            variant="ghost"
+            size="xs"
+            seed={15}
+            onClick={() => handleOpenPlayground('sansui')}
           >
             Playground
           </SumiButton>
         </nav>
 
         {/* Zone 3: Ação Principal com caixa de borda reta Rough.js */}
-        <div className="relative z-10 flex items-center gap-2 shrink-0">
+        <div className="order-2 md:order-3 relative z-10 flex items-center gap-2 shrink-0">
           <SumiButton
             variant="ink"
             size="sm"
@@ -189,7 +200,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className={`flex-1 ${currentView === 'playground' ? 'pt-18 sm:pt-20' : ''}`}>
+      <main className={`flex-1 ${currentView === 'playground' ? 'pt-28 md:pt-20' : ''}`}>
         {currentView === 'landing' ? (
           <LandingView onOpenPlayground={handleOpenPlayground} />
         ) : (

@@ -7,7 +7,7 @@
     "moduleResolution": "bundler",
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "./dist",
+    "outDir": "./dist-lib",
     "jsx": "react-jsx",
     "rootDir": "./src/lib/sumi-forge"
   },

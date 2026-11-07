@@ -7,6 +7,8 @@ import {
   JapaneseCalligraphy,
   MAGIC_SCHOOLS,
   MaskChoreography,
+  SANSUI_THEMES,
+  SansuiThemeId,
   SchoolId,
   SumiBrandEmblem,
   SumiButton,
@@ -15,6 +17,7 @@ import {
   SumiLayerIntensities,
   SumiMaskReveal,
   SumiRoughBox,
+  SumiSansui,
   SumiSectionPainter,
   SumiVFX,
 } from '../lib/sumi-forge';
@@ -23,7 +26,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface LandingViewProps {
   onOpenPlayground: (
-    initialTab?: 'mask' | 'atelier' | 'vfx' | 'landscape',
+    initialTab?: 'mask' | 'atelier' | 'vfx' | 'landscape' | 'sansui',
     archetype?: string
   ) => void;
 }
@@ -115,6 +118,15 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
   const [showcaseMaskMode, setShowcaseMaskMode] = useState<MaskChoreography>('katana_slashes');
   const [showcaseReplay, setShowcaseReplay] = useState<number>(1);
   const [selectedExpIdx, setSelectedExpIdx] = useState<number>(0);
+
+  // Estados da Seção Paisagens Gerativas Sansui (<SumiSansui />)
+  const [sansuiBannerSeed, setSansuiBannerSeed] = useState<number>(4096);
+  const [sansuiCardSeeds, setSansuiCardSeeds] = useState<[number, number, number]>([
+    7142, 9321, 5819,
+  ]);
+  const [sansuiBannerTheme, setSansuiBannerTheme] =
+    useState<Exclude<SansuiThemeId, 'auto'>>('classic_washi');
+  const [sansuiCustomWash, setSansuiCustomWash] = useState<string | undefined>(undefined);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const heroBgRef = useRef<HTMLDivElement | null>(null);
@@ -261,7 +273,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
           ATO 0: CENA 100% PROCEDURAL VIVA DO MONTE FUJI, SAKURA E SOL VERMELHO
           Qualidade máxima em qualquer resolução + Glassmorphismo para leitura perfeita
           ===================================================================== */}
-      <section className="relative w-full min-h-[100svh] pt-16 flex flex-col justify-between overflow-hidden border-b border-[#D5CEC0]/70">
+      <section className="relative w-full min-h-[100svh] pt-26 md:pt-16 flex flex-col justify-between overflow-hidden border-b border-[#D5CEC0]/70">
         {/* BACKGROUND 100% PROCEDURAL: Monte Fuji, Sol Carmesim, Galho de Sakura e Ilha de Pinheiros */}
         <div
           ref={heroBgRef}
@@ -946,7 +958,315 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
       </section>
 
       {/* =====================================================================
-          ATO III: CORDILHEIRA NA NEBLINA & GALERIA FLUIDA DE 5 ESTILOS
+          ATO III: PAISAGENS GERATIVAS SANSUI POR SEED (<SumiSansui />)
+          Inspirado na pintura clássico-minimalista de montanhas e águas (山水)
+          ===================================================================== */}
+      <section
+        id="paisagens-sansui"
+        className="relative py-16 sm:py-24 lg:py-28 border-b border-[#D5CEC0]/70 overflow-hidden bg-[#ECE6DA]/55"
+      >
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 sm:space-y-8">
+          {/* Cabeçalho & Controles Rápidos de Semente (Seed) e Paleta */}
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
+            <div className="bg-[#F8F4EC]/88 backdrop-blur-xl border border-white/80 rounded-2xl p-5 sm:p-6 shadow-[0_10px_32px_rgba(17,16,14,0.05)] max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-[#C8232C] font-medium mb-2">
+                <JapaneseCalligraphy
+                  jp="山水画"
+                  romaji="Sansuiga"
+                  pt="Pintura clássica de montanhas e águas que nasce a partir de uma semente única"
+                  variant="hanko"
+                  tooltipPlacement="top"
+                />
+                <span>03 · Paisagens Gerativas Sansui por Seed</span>
+              </div>
+              <h2
+                className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#11100E] tracking-tight mb-2"
+                style={{ textWrap: 'balance' }}
+              >
+                Montanhas, vales e rios infinitos com uma única linha de código.
+              </h2>
+              <p className="text-xs sm:text-sm text-[#252320] leading-relaxed">
+                Cada número de{' '}
+                <code className="font-tabular font-semibold text-[#11100E]">seed</code> esculpe uma
+                nova cadeia de montanhas com hachuras de rocha, pinheiros e pescador solitário,
+                adaptando-se à cor do seu projeto ou ao Modo Noturno.
+              </p>
+            </div>
+
+            {/* Sorteador de Seeds & Seletor de Temas / Cor Customizada */}
+            <div className="flex flex-wrap items-center gap-2 bg-[#F8F4EC]/88 backdrop-blur-xl p-3 rounded-xl border border-white/80 shadow-[0_8px_24px_rgba(17,16,14,0.05)]">
+              <SumiButton
+                variant="crimson"
+                size="sm"
+                seed={145}
+                onClick={() => {
+                  setSansuiBannerSeed(Math.floor(Math.random() * 89000) + 1000);
+                  setSansuiCardSeeds([
+                    Math.floor(Math.random() * 89000) + 1000,
+                    Math.floor(Math.random() * 89000) + 1000,
+                    Math.floor(Math.random() * 89000) + 1000,
+                  ]);
+                }}
+              >
+                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                  <SumiIcon name="replay" size={16} color="#11100E" />
+                </span>
+                <span>Sortear Novas Seeds</span>
+              </SumiButton>
+
+              {(
+                [
+                  { id: 'classic_washi', label: 'Washi Clássico' },
+                  { id: 'jade_mineral', label: 'Verde Jade' },
+                  { id: 'night_obsidian', label: 'Modo Noturno' },
+                  { id: 'crimson_dawn', label: 'Alvorada' },
+                ] as const
+              ).map((t, idx) => (
+                <SumiButton
+                  key={t.id}
+                  variant={
+                    sansuiBannerTheme === t.id && !sansuiCustomWash ? 'ink' : 'washi'
+                  }
+                  size="sm"
+                  seed={146 + idx}
+                  active={sansuiBannerTheme === t.id && !sansuiCustomWash}
+                  onClick={() => {
+                    setSansuiBannerTheme(t.id);
+                    setSansuiCustomWash(undefined);
+                  }}
+                >
+                  {t.label}
+                </SumiButton>
+              ))}
+
+              <label
+                title="Testar com qualquer cor personalizada da sua marca"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[2px] border border-[#11100E] bg-[#FAF7F0] text-xs font-medium text-[#11100E] cursor-pointer"
+              >
+                <input
+                  type="color"
+                  value={sansuiCustomWash || SANSUI_THEMES[sansuiBannerTheme].colors.wash}
+                  onChange={(e) => setSansuiCustomWash(e.target.value)}
+                  className="w-4 h-4 rounded cursor-pointer border-0"
+                />
+                <span>Sua Cor</span>
+              </label>
+            </div>
+          </div>
+
+          {/* BANNER PANORÂMICO PRINCIPAL (Horizonte Fluvial & Barco Solitário) */}
+          <div className="relative h-[290px] sm:h-[360px] md:h-[400px] rounded-2xl border border-[#D5CEC0] overflow-hidden shadow-[0_14px_40px_rgba(17,16,14,0.08)]">
+            <SumiSansui
+              seed={sansuiBannerSeed}
+              composition="panoramic_river"
+              theme={sansuiBannerTheme}
+              washColor={sansuiCustomWash}
+              treeDensity={1.1}
+              mistDensity={1.0}
+              showBoat
+              animated
+            />
+
+            {/* Título Editorial Sobreposto à Esquerda (estilo Kalpa Shan / Sansui) */}
+            <div className="absolute top-6 left-6 sm:top-10 sm:left-10 max-w-md pointer-events-none">
+              <div
+                className={`inline-flex flex-col gap-1 px-4 py-3 rounded-xl backdrop-blur-md border ${
+                  sansuiBannerTheme === 'night_obsidian'
+                    ? 'bg-[#141518]/78 border-white/15 text-[#E8E2D5]'
+                    : 'bg-[#EFECE4]/78 border-white/75 text-[#181715]'
+                }`}
+              >
+                <div className="flex items-center gap-2 text-xs font-tabular opacity-80">
+                  <span>&lt;SumiSansui composition=&quot;panoramic_river&quot; /&gt;</span>
+                  <span>·</span>
+                  <span>seed #{sansuiBannerSeed}</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-editorial font-bold tracking-tight">
+                  山水 · Horizonte Fluvial
+                </h3>
+                <p className="text-xs opacity-85">
+                  Ilhas distantes na neblina, espelho d’água, barco solitário e promontório rochoso.
+                </p>
+              </div>
+            </div>
+
+            <div className="absolute bottom-3 right-3 flex items-center gap-2">
+              <SumiButton
+                variant="washi"
+                size="xs"
+                seed={152}
+                onClick={() =>
+                  setSansuiBannerSeed(Math.floor(Math.random() * 89000) + 1000)
+                }
+              >
+                <SumiIcon name="replay" size={14} color="#11100E" />
+                <span>Nova Seed</span>
+              </SumiButton>
+              <SumiButton
+                variant="ink"
+                size="xs"
+                seed={153}
+                onClick={() => onOpenPlayground('sansui')}
+              >
+                <span>Abrir no Playground →</span>
+              </SumiButton>
+            </div>
+          </div>
+
+          {/* GRADE DE 3 CARTÕES CLÁSSICOS: PICOS ESCARPADOS, VALE VERDE MINERAL & MODO NOTURNO */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {/* Cartão 1: Picos Escarpados (Karst Peaks) */}
+            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EFECE4] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col">
+              <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden">
+                <SumiSansui
+                  seed={sansuiCardSeeds[0]}
+                  composition="karst_peaks"
+                  theme={sansuiBannerTheme}
+                  washColor={sansuiCustomWash}
+                  treeDensity={1.15}
+                  showBoat
+                />
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/90 text-[11px] font-tabular text-[#11100E] border border-[#D5CEC0]">
+                    karst_peaks · #{sansuiCardSeeds[0]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSansuiCardSeeds((prev) => [
+                        Math.floor(Math.random() * 89000) + 1000,
+                        prev[1],
+                        prev[2],
+                      ])
+                    }
+                    className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 hover:bg-[#11100E] hover:text-white text-[11px] font-medium text-[#11100E] border border-[#11100E]/40 transition-colors cursor-pointer"
+                  >
+                    Nova Seed
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-sm font-semibold text-[#11100E]">
+                    Picos Escarpados &amp; Abismo
+                  </h4>
+                  <p className="text-xs text-[#3F3D39]">
+                    Torres verticais com hachuras de rocha e pinheiros
+                  </p>
+                </div>
+                <JapaneseCalligraphy
+                  jp="奇峰"
+                  romaji="Kihō"
+                  pt="Picos majestosos que tocam as nuvens"
+                  variant="hanko"
+                  tooltipPlacement="top"
+                />
+              </div>
+            </div>
+
+            {/* Cartão 2: Vale das Cinco Neblinas (Verde Mineral Jade) */}
+            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EDE8DC] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col">
+              <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden">
+                <SumiSansui
+                  seed={sansuiCardSeeds[1]}
+                  composition="layered_valley"
+                  theme="jade_mineral"
+                  washColor={sansuiCustomWash}
+                  ridgeLayers={6}
+                  treeDensity={1.2}
+                  showBoat
+                />
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/90 text-[11px] font-tabular text-[#11100E] border border-[#D5CEC0]">
+                    layered_valley · #{sansuiCardSeeds[1]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSansuiCardSeeds((prev) => [
+                        prev[0],
+                        Math.floor(Math.random() * 89000) + 1000,
+                        prev[2],
+                      ])
+                    }
+                    className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 hover:bg-[#11100E] hover:text-white text-[11px] font-medium text-[#11100E] border border-[#11100E]/40 transition-colors cursor-pointer"
+                  >
+                    Nova Seed
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-sm font-semibold text-[#11100E]">
+                    Vale das Cinco Neblinas (Verde Jade)
+                  </h4>
+                  <p className="text-xs text-[#3F3D39]">
+                    Camadas sobrepostas com aguada mineral celadon
+                  </p>
+                </div>
+                <JapaneseCalligraphy
+                  jp="青緑"
+                  romaji="Seiryoku"
+                  pt="Estilo clássico com pigmentos minerais verdes nas montanhas"
+                  variant="hanko"
+                  tooltipPlacement="top"
+                />
+              </div>
+            </div>
+
+            {/* Cartão 3: Desfiladeiro Noturno (Modo Noturno / Night Obsidian) */}
+            <div className="group rounded-2xl border border-[#2A2D34] bg-[#141518] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.14)] flex flex-col">
+              <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden">
+                <SumiSansui
+                  seed={sansuiCardSeeds[2]}
+                  composition="twin_gorges"
+                  theme="night_obsidian"
+                  treeDensity={1.15}
+                  showBoat
+                />
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded bg-[#1E2025]/90 text-[11px] font-tabular text-[#E8E2D5] border border-white/15">
+                    night_obsidian · #{sansuiCardSeeds[2]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSansuiCardSeeds((prev) => [
+                        prev[0],
+                        prev[1],
+                        Math.floor(Math.random() * 89000) + 1000,
+                      ])
+                    }
+                    className="px-2 py-0.5 rounded bg-[#E8E2D5] hover:bg-[#C8232C] hover:text-white text-[11px] font-medium text-[#141518] border border-white/20 transition-colors cursor-pointer"
+                  >
+                    Nova Seed
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 bg-[#191B1F] border-t border-white/10 flex items-center justify-between gap-2 text-[#E8E2D5]">
+                <div>
+                  <h4 className="text-sm font-semibold text-[#FAF7F0]">
+                    Noite Obsidiana (Dark Mode Nativo)
+                  </h4>
+                  <p className="text-xs text-stone-400">
+                    Cristas iluminadas em giz marfim sobre céu noturno
+                  </p>
+                </div>
+                <JapaneseCalligraphy
+                  jp="夜行"
+                  romaji="Yakō"
+                  pt="A beleza silenciosa das montanhas sob o luar"
+                  variant="hanko"
+                  tooltipPlacement="top"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          ATO IV: CORDILHEIRA NA NEBLINA & GALERIA FLUIDA DE 5 ESTILOS
           Abas centralizadas e responsivas com bordas Rough.js
           ===================================================================== */}
       <section
@@ -967,7 +1287,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
           <div className="text-center max-w-2xl mx-auto mb-7 sm:mb-9 bg-[#F8F4EC]/80 backdrop-blur-xl border border-white/80 rounded-2xl p-5 sm:p-6 shadow-[0_8px_28px_rgba(17,16,14,0.04)]">
             <div className="inline-flex items-center gap-2 text-xs text-[#C8232C] font-medium mb-2">
               <SumiIcon name="sakura" size={20} color="#11100E" />
-              <span>03 · Galeria Viva de Estilos</span>
+              <span>04 · Galeria Viva de Estilos</span>
             </div>
             <h2
               className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-[#11100E] tracking-tight mb-3"

@@ -31,6 +31,7 @@ export default defineConfig({
         },
       },
     },
+    outDir: 'dist-lib',
     emptyOutDir: false,
     sourcemap: true,
   },
