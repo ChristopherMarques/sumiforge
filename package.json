@@ -52,7 +52,8 @@
     "build": "npm run clean && npm run build:app && npm run build:lib",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build:lib"
+    "prepublishOnly": "npm run build:lib",
+    "deploy": "npm run build && npm version patch && npm publish --access public"
   },
   "dependencies": {
     "roughjs": "^4.6.6"
