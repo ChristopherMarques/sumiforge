@@ -15,7 +15,7 @@
 
 <br />
 
-<img src="./public/og-sumi-forge.png" alt="SumiForge — Pintura Viva do Monte Fuji, Sakura e Sol Carmesim em Papel Washi" width="100%" />
+<img src="./public/og-sumi-forge.png" alt="SumiForge: Pintura Viva do Monte Fuji, Sakura e Sol Carmesim em Papel Washi" width="100%" />
 
 <br />
 
@@ -267,7 +267,7 @@ O `@sumi-forge/react` foi projetado para oferecer uma experiência tátil de pri
 
 ## Motor Procedural & Guia para Agentes de IA (`/llms.txt`)
 
-Além dos componentes React declarativos, `@sumi-forge/react` exporta todas as suas **primitivas matemáticas e de pintura em Canvas 2D** fortemente tipadas com JSDoc (`createSeededRandom`, `fbmNoise2D`, `sampleCubicCurve`, `drawWashiPaperTexture`, `drawTarashikomiWashBlob`, `drawSumiKasureRibbon`, `drawSakuraBlossom`, `renderSansuiMountainRidge`, `drawSansuiPineTree`, `drawSansuiMountainPavilion`, `drawSansuiCraneFlock`, `drawSansuiSampanBoat`) para que você — ou seu Agente de IA favorito (Cursor, Claude Code, Windsurf, Copilot, Antigravity) — possa criar novas pinturas procedurais inéditas do zero.
+Além dos componentes React declarativos, `@sumi-forge/react` exporta todas as suas **primitivas matemáticas e de pintura em Canvas 2D** fortemente tipadas com JSDoc (`createSeededRandom`, `fbmNoise2D`, `sampleCubicCurve`, `drawWashiPaperTexture`, `drawTarashikomiWashBlob`, `drawSumiKasureRibbon`, `drawSakuraBlossom`, `renderSansuiMountainRidge`, `drawSansuiPineTree`, `drawSansuiMountainPavilion`, `drawSansuiCraneFlock`, `drawSansuiSampanBoat`) para que você (ou seu Agente de IA favorito, como Cursor, Claude Code, Windsurf, Copilot e Antigravity) possa criar novas pinturas procedurais inéditas do zero.
 
 - **Rota Pública para Agentes**: [`/llms.txt`](./public/llms.txt)
 - **No Playground Studio**: Clique no botão **`Guia IA · llms.txt`** no topo do Playground para copiar prompts prontos com contexto ou baixar o manifesto completo.
@@ -292,6 +292,7 @@ npm run build
 
 ## Documentação e Governança do Projeto
 
+- [Repositório Oficial no GitHub (`ChristopherMarques/sumiforge`)](https://github.com/ChristopherMarques/sumiforge)
 - [Guia de Contribuição (`CONTRIBUTING.md`)](./CONTRIBUTING.md)
 - [Código de Conduta (`CODE_OF_CONDUCT.md`)](./CODE_OF_CONDUCT.md)
 - [Template de Pull Request (`.github/PULL_REQUEST_TEMPLATE.md`)](./.github/PULL_REQUEST_TEMPLATE.md)
@@ -302,6 +303,8 @@ npm run build
 <div align="center">
 
 **墨 SumiForge · `@sumi-forge/react`**  
+Idealizado e forjado por [**Christopher Marques Corrêa**](https://www.linkedin.com/in/christopher-marques-correa/) · [**GitHub**](https://github.com/ChristopherMarques/sumiforge)  
 *made with love in Japa.... ops, Brazil* 🇧🇷 ❤️ 🇯🇵
 
 </div>
+

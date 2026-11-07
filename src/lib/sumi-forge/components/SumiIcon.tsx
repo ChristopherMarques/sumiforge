@@ -1,7 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef } from 'react';
 import rough from 'roughjs';
 import { samplePolarArc, sampleQuadraticCurve } from '../math';
 import { drawSumiKasureRibbon } from '../techniques';
+
+/**
+ * Contexto interno para que ícones dentro de <SumiButton variant="ink" | "crimson" />
+ * herdem automaticamente a cor clara do texto quando nenhuma cor customizada for forçada.
+ */
+export const SumiIconColorContext = createContext<string | null>(null);
 
 export type SumiIconName =
   | 'logo'
@@ -27,7 +33,9 @@ export type SumiIconName =
   | 'close'
   | 'terminal'
   | 'fullscreen'
-  | 'minimize';
+  | 'minimize'
+  | 'github'
+  | 'linkedin';
 
 export interface SumiIconProps {
   name: SumiIconName;
@@ -39,19 +47,20 @@ export interface SumiIconProps {
 }
 
 /**
- * Componente <SumiIcon /> — Desenha todos os ícones da interface em nanquim monocromático
+ * Componente <SumiIcon />: Desenha todos os ícones da interface em nanquim monocromático
  * nítido usando Rough.js (preserveVertices: true), mantendo estética orgânica de traço à mão
  * com leitura imediata.
  */
 export const SumiIcon: React.FC<SumiIconProps> = ({
   name,
-  size = 22,
+  size = 18,
   color = '#11100E',
   seed = 101,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const effectiveSize = Math.max(20, size);
+  const inheritedColor = useContext(SumiIconColorContext);
+  const effectiveSize = Math.max(15, size);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -65,7 +74,9 @@ export const SumiIcon: React.FC<SumiIconProps> = ({
     if (!ctx) return;
 
     let resolvedColor = color;
-    if (color === 'currentColor' && canvas.parentElement) {
+    if (inheritedColor && (color === '#11100E' || color === 'currentColor')) {
+      resolvedColor = inheritedColor;
+    } else if (color === 'currentColor' && canvas.parentElement) {
       resolvedColor = window.getComputedStyle(canvas.parentElement).color || '#11100E';
     }
 
@@ -497,10 +508,63 @@ export const SumiIcon: React.FC<SumiIconProps> = ({
         ],
         opts
       );
+    } else if (name === 'github') {
+      // Silhueta Octocat / GitHub desenhada organicamente com Rough.js
+      const ghPath = [
+        `M ${12 * s} ${2.4 * s}`,
+        `C ${6.7 * s} ${2.4 * s} ${2.4 * s} ${6.7 * s} ${2.4 * s} ${12 * s}`,
+        `C ${2.4 * s} ${16.2 * s} ${5.1 * s} ${19.8 * s} ${8.9 * s} ${21.1 * s}`,
+        `L ${8.9 * s} ${18.4 * s}`,
+        `C ${6.3 * s} ${19.0 * s} ${5.7 * s} ${17.2 * s} ${5.7 * s} ${17.2 * s}`,
+        `C ${5.2 * s} ${16.0 * s} ${4.6 * s} ${15.7 * s} ${4.6 * s} ${15.7 * s}`,
+        `C ${3.7 * s} ${15.1 * s} ${4.7 * s} ${15.1 * s} ${4.7 * s} ${15.1 * s}`,
+        `C ${5.7 * s} ${15.2 * s} ${6.2 * s} ${16.1 * s} ${6.2 * s} ${16.1 * s}`,
+        `C ${7.1 * s} ${17.6 * s} ${8.5 * s} ${17.2 * s} ${9.0 * s} ${16.9 * s}`,
+        `C ${9.1 * s} ${16.2 * s} ${9.4 * s} ${15.7 * s} ${9.7 * s} ${15.4 * s}`,
+        `C ${7.5 * s} ${15.1 * s} ${5.2 * s} ${14.3 * s} ${5.2 * s} ${10.6 * s}`,
+        `C ${5.2 * s} ${9.5 * s} ${5.6 * s} ${8.6 * s} ${6.2 * s} ${7.9 * s}`,
+        `C ${6.1 * s} ${7.6 * s} ${5.8 * s} ${6.6 * s} ${6.3 * s} ${5.2 * s}`,
+        `C ${6.3 * s} ${5.2 * s} ${7.2 * s} ${4.9 * s} ${9.0 * s} ${6.2 * s}`,
+        `C ${9.8 * s} ${5.9 * s} ${10.9 * s} ${5.8 * s} ${12.0 * s} ${5.8 * s}`,
+        `C ${13.1 * s} ${5.8 * s} ${14.2 * s} ${5.9 * s} ${15.0 * s} ${6.2 * s}`,
+        `C ${16.8 * s} ${4.9 * s} ${17.7 * s} ${5.2 * s} ${17.7 * s} ${5.2 * s}`,
+        `C ${18.2 * s} ${6.6 * s} ${17.9 * s} ${7.6 * s} ${17.8 * s} ${7.9 * s}`,
+        `C ${18.4 * s} ${8.6 * s} ${18.8 * s} ${9.5 * s} ${18.8 * s} ${10.6 * s}`,
+        `C ${18.8 * s} ${14.3 * s} ${16.5 * s} ${15.1 * s} ${14.3 * s} ${15.4 * s}`,
+        `C ${14.7 * s} ${15.8 * s} ${15.1 * s} ${16.5 * s} ${15.1 * s} ${17.6 * s}`,
+        `L ${15.1 * s} ${21.1 * s}`,
+        `C ${18.9 * s} ${19.8 * s} ${21.6 * s} ${16.2 * s} ${21.6 * s} ${12 * s}`,
+        `C ${21.6 * s} ${6.7 * s} ${17.3 * s} ${2.4 * s} ${12 * s} ${2.4 * s} Z`,
+      ].join(' ');
+      rc.path(ghPath, {
+        ...opts,
+        strokeWidth: Math.max(1.55, 1.75 * s),
+        roughness: 0.2,
+      });
+    } else if (name === 'linkedin') {
+      // Moldura quadrada orgânica + monograma caligráfico "in" desenhado com Rough.js
+      rc.rectangle(3.2 * s, 3.2 * s, 17.6 * s, 17.6 * s, {
+        ...opts,
+        strokeWidth: Math.max(1.55, 1.75 * s),
+      });
+      // Ponto do "i"
+      rc.circle(7.6 * s, 7.6 * s, 1.8 * s, {
+        ...opts,
+        fill: resolvedColor,
+        fillStyle: 'solid',
+      });
+      // Haste do "i"
+      rc.line(7.6 * s, 10.6 * s, 7.6 * s, 17.2 * s, opts);
+      // Haste e arco do "n"
+      rc.line(11.4 * s, 10.6 * s, 11.4 * s, 17.2 * s, opts);
+      rc.path(
+        `M ${11.4 * s} ${12.6 * s} C ${12.2 * s} ${10.5 * s} ${16.8 * s} ${10.3 * s} ${16.8 * s} ${13.4 * s} L ${16.8 * s} ${17.2 * s}`,
+        opts
+      );
     }
 
     ctx.restore();
-  }, [name, effectiveSize, color, seed]);
+  }, [name, effectiveSize, color, inheritedColor, seed]);
 
   return (
     <canvas
@@ -518,7 +582,7 @@ export interface SumiBrandEmblemProps {
 }
 
 /**
- * Emblema Japonês Pintado (<SumiBrandEmblem />) — Pinta o círculo Ensō em nanquim,
+ * Emblema Japonês Pintado (<SumiBrandEmblem />): Pinta o círculo Ensō em nanquim,
  * o sol carmesim e o ideograma 墨 (Sumi: Nanquim) à mão usando as técnicas da biblioteca.
  */
 export const SumiBrandEmblem: React.FC<SumiBrandEmblemProps> = ({

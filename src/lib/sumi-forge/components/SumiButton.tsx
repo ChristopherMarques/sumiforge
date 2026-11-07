@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import rough from 'roughjs';
+import { SumiIconColorContext } from './SumiIcon';
 
 export type SumiButtonVariant = 'crimson' | 'ink' | 'washi' | 'ghost' | 'outline';
 export type SumiButtonSize = 'xs' | 'sm' | 'md' | 'lg';
@@ -44,12 +45,12 @@ function getRoughRectPaths(
   const dummySvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   const rc = rough.svg(dummySvg);
 
-  // Borda principal mais reta e arquitetônica desenhada com Rough.js
-  const mainNode = rc.rectangle(1.5, 1.5, Math.max(4, w - 3), Math.max(4, h - 3), {
+  // Borda principal mais reta e arquitetônica desenhada com Rough.js alinhada exatamente ao limite da caixa
+  const mainNode = rc.rectangle(0.75, 0.75, Math.max(4, w - 1.5), Math.max(4, h - 1.5), {
     stroke: strokeColor,
     strokeWidth: 1.45,
-    roughness: 0.36,
-    bowing: 0.28,
+    roughness: 0.34,
+    bowing: 0.25,
     preserveVertices: true,
     seed,
   });
@@ -62,11 +63,11 @@ function getRoughRectPaths(
 
   const accentPaths: string[] = [];
   if (innerAccentColor && w > 24 && h > 20) {
-    const innerNode = rc.rectangle(3.5, 3.5, Math.max(4, w - 7), Math.max(4, h - 7), {
+    const innerNode = rc.rectangle(3, 3, Math.max(4, w - 6), Math.max(4, h - 6), {
       stroke: innerAccentColor,
-      strokeWidth: 0.75,
-      roughness: 0.25,
-      bowing: 0.2,
+      strokeWidth: 0.8,
+      roughness: 0.22,
+      bowing: 0.18,
       preserveVertices: true,
       seed: seed + 17,
     });
@@ -136,12 +137,12 @@ export const SumiButton: React.FC<SumiButtonProps> = ({
     bgClass = hovered && !disabled ? 'bg-[#25221F]' : 'bg-[#11100E]';
     textClass = 'text-[#F5F0E6]';
     strokeColor = hovered || active ? '#C8232C' : '#11100E';
-    innerAccentColor = 'rgba(245, 240, 230, 0.24)';
+    innerAccentColor = 'rgba(245, 240, 230, 0.28)';
   } else if (effectiveVariant === 'washi') {
-    bgClass = hovered && !disabled ? 'bg-[#F3EDE0]' : 'bg-[#FAF7F0]/92';
+    bgClass = hovered && !disabled ? 'bg-[#F3EDE0]' : 'bg-[#FAF7F0]';
     textClass = 'text-[#11100E]';
     strokeColor = hovered ? '#C8232C' : '#11100E';
-    innerAccentColor = hovered ? 'rgba(200, 35, 44, 0.22)' : 'rgba(17, 16, 14, 0.14)';
+    innerAccentColor = hovered ? 'rgba(200, 35, 44, 0.24)' : 'rgba(17, 16, 14, 0.18)';
   } else if (effectiveVariant === 'outline') {
     bgClass = hovered && !disabled ? 'bg-[#11100E]/6' : 'bg-[#F8F4EC]/70';
     textClass = 'text-[#11100E]';
@@ -155,11 +156,12 @@ export const SumiButton: React.FC<SumiButtonProps> = ({
     innerAccentColor = null;
   }
 
+  // Alturas travadas por tamanho para garantir proporção 100% idêntica entre botões claros (washi) e escuros (ink/crimson)
   const sizeClasses: Record<SumiButtonSize, string> = {
-    xs: 'px-2.5 py-1 text-[11px] gap-1.5 min-h-[28px]',
-    sm: 'px-3.5 py-1.5 text-xs gap-2 min-h-[34px]',
-    md: 'px-4 py-2.5 text-xs sm:text-sm gap-2.5 min-h-[40px]',
-    lg: 'px-5 py-3 text-sm gap-2.5 min-h-[44px]',
+    xs: 'h-8 px-3 text-xs gap-1.5',
+    sm: 'h-9 px-3.5 text-xs gap-2',
+    md: 'h-10 px-4 text-xs sm:text-sm gap-2.5',
+    lg: 'h-11 px-5 text-sm gap-2.5',
   };
 
   const { mainPaths, accentPaths } =
@@ -179,8 +181,8 @@ export const SumiButton: React.FC<SumiButtonProps> = ({
         setHovered(false);
         rest.onMouseLeave?.(e);
       }}
-      className={`relative inline-flex items-center justify-center font-medium rounded-[2px] transition-colors duration-150 select-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
-        fullWidth ? 'w-full' : ' shrink-0'
+      className={`relative inline-flex items-center justify-center font-medium leading-none rounded-[2px] transition-colors duration-150 select-none cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${
+        fullWidth ? 'w-full' : 'shrink-0'
       } ${bgClass} ${textClass} ${sizeClasses[size]} ${className}`}
       {...rest}
     >
@@ -215,9 +217,19 @@ export const SumiButton: React.FC<SumiButtonProps> = ({
           ))}
         </svg>
       )}
-      <span className="relative z-10 inline-flex items-center justify-center gap-2 whitespace-nowrap">
-        {children}
-      </span>
+      <SumiIconColorContext.Provider
+        value={
+          effectiveVariant === 'crimson'
+            ? '#FAF7F0'
+            : effectiveVariant === 'ink'
+              ? '#F5F0E6'
+              : null
+        }
+      >
+        <span className="relative z-10 inline-flex items-center justify-center gap-2 whitespace-nowrap">
+          {children}
+        </span>
+      </SumiIconColorContext.Provider>
     </button>
   );
 };

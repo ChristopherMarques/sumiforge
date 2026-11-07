@@ -18,7 +18,7 @@ export interface JapaneseCalligraphyProps {
 }
 
 /**
- * Componente <JapaneseCalligraphy /> — Mantém os ideogramas japoneses intactos no layout
+ * Componente <JapaneseCalligraphy />: Mantém os ideogramas japoneses intactos no layout
  * e exibe a tradução em Português-Brasileiro dentro de um pequeno modal/tooltip flutuante
  * com direção controlada (top, bottom, left, right) e proteção automática contra fuga da tela.
  */

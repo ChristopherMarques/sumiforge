@@ -361,9 +361,7 @@ export function GenerativeSansuiArtwork() {
             onClick={() => setShowLlmsModal(true)}
             title="Abrir Guia llms.txt para Agentes de IA (Cursor, Claude, Windsurf, Copilot)"
           >
-            <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-              <SumiIcon name="terminal" size={16} color="#11100E" />
-            </span>
+            <SumiIcon name="terminal" size={16} />
             <span>Guia IA · llms.txt</span>
           </SumiButton>
         </div>
@@ -389,13 +387,7 @@ export function GenerativeSansuiArtwork() {
                 active={active}
                 onClick={() => setActiveTab(t.id)}
               >
-                <span
-                  className={`inline-flex items-center justify-center rounded-[2px] p-0.5 ${
-                    active ? 'bg-[#F7F3EB]' : ''
-                  }`}
-                >
-                  <SumiIcon name={t.icon} size={18} color="#11100E" />
-                </span>
+                <SumiIcon name={t.icon} size={16} />
                 <span>{t.label}</span>
               </SumiButton>
             );
@@ -570,9 +562,7 @@ export function GenerativeSansuiArtwork() {
               fullWidth
               onClick={() => setMaskReplayTrigger((t) => t + 1)}
             >
-              <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                <SumiIcon name="replay" size={18} color="#11100E" />
-              </span>
+              <SumiIcon name="replay" size={17} />
               <span>Executar Pintura Novamente</span>
             </SumiButton>
           </div>
@@ -881,9 +871,7 @@ export function GenerativeSansuiArtwork() {
                   seed={241}
                   onClick={() => atelierActionsRef.current?.replayStrokes()}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="play" size={16} color="#11100E" />
-                  </span>
+                  <SumiIcon name="play" size={16} />
                   <span>Replay Animado</span>
                 </SumiButton>
                 <SumiButton
@@ -921,9 +909,7 @@ export function GenerativeSansuiArtwork() {
                 seed={245}
                 onClick={() => atelierActionsRef.current?.exportPng()}
               >
-                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                  <SumiIcon name="download" size={16} color="#11100E" />
-                </span>
+                <SumiIcon name="download" size={16} />
                 <span>Baixar PNG</span>
               </SumiButton>
             </div>
@@ -1182,9 +1168,7 @@ export function GenerativeSansuiArtwork() {
                   fullWidth
                   onClick={handleDownloadSpriteSheetPNG}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="download" size={16} color="#11100E" />
-                  </span>
+                  <SumiIcon name="download" size={16} />
                   <span>Sprite Sheet 4×4 PNG</span>
                 </SumiButton>
 
@@ -1196,9 +1180,7 @@ export function GenerativeSansuiArtwork() {
                   disabled={isExportingGif}
                   onClick={handleDownloadAnimatedGIF89a}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="download" size={16} color="#11100E" />
-                  </span>
+                  <SumiIcon name="download" size={16} />
                   <span>{isExportingGif ? 'Gerando GIF...' : 'Exportar GIF Animado'}</span>
                 </SumiButton>
               </div>
@@ -1777,9 +1759,7 @@ export function GenerativeSansuiArtwork() {
                 className="w-full"
                 onClick={() => sansuiActionsRef.current?.exportPng()}
               >
-                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                  <SumiIcon name="download" size={16} color="#11100E" />
-                </span>
+                <SumiIcon name="download" size={16} />
                 <span>Baixar Pintura Sansui (PNG)</span>
               </SumiButton>
             </div>
@@ -2028,9 +2008,7 @@ export function GenerativeSansuiArtwork() {
                   seed={902}
                   onClick={() => setSansuiSeed(Math.floor(1000 + Math.random() * 90000))}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="replay" size={15} color="#11100E" />
-                  </span>
+                  <SumiIcon name="replay" size={16} />
                   <span>Nova Seed</span>
                 </SumiButton>
                 <SumiButton
@@ -2039,9 +2017,7 @@ export function GenerativeSansuiArtwork() {
                   seed={903}
                   onClick={() => sansuiActionsRef.current?.exportPng()}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="download" size={15} color="#11100E" />
-                  </span>
+                  <SumiIcon name="download" size={16} />
                   <span>Baixar PNG</span>
                 </SumiButton>
                 <SumiButton
@@ -2101,13 +2077,10 @@ export function GenerativeSansuiArtwork() {
                   seed={940}
                   onClick={() => handleCopy(SUMI_FORGE_LLMS_TXT, 'llms-full')}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon
-                      name={copiedId === 'llms-full' ? 'check' : 'copy'}
-                      size={15}
-                      color="#11100E"
-                    />
-                  </span>
+                  <SumiIcon
+                    name={copiedId === 'llms-full' ? 'check' : 'copy'}
+                    size={16}
+                  />
                   <span>
                     {copiedId === 'llms-full' ? 'llms.txt Copiado!' : 'Copiar llms.txt Completo'}
                   </span>
@@ -2119,9 +2092,7 @@ export function GenerativeSansuiArtwork() {
                   seed={941}
                   onClick={handleDownloadLlmsTxt}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="download" size={15} color="#11100E" />
-                  </span>
+                  <SumiIcon name="download" size={16} />
                   <span>Baixar llms.txt</span>
                 </SumiButton>
 
@@ -2209,13 +2180,10 @@ export function GenerativeSansuiArtwork() {
                           fullWidth
                           onClick={() => handleCopy(tpl.prompt, tpl.id)}
                         >
-                          <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                            <SumiIcon
-                              name={copiedId === tpl.id ? 'check' : 'copy'}
-                              size={15}
-                              color="#11100E"
-                            />
-                          </span>
+                          <SumiIcon
+                            name={copiedId === tpl.id ? 'check' : 'copy'}
+                            size={16}
+                          />
                           <span>
                             {copiedId === tpl.id
                               ? 'Prompt Copiado!'

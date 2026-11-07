@@ -15,7 +15,7 @@ export interface SumiAgentPromptTemplate {
  * saibam tanto utilizar todos os componentes React tipados quanto criar novas pinturas procedurais
  * do zero reutilizando as texturas de papel Washi, manchas Tarashikomi, pincéis Kasure e primitivas Sansui.
  */
-export const SUMI_FORGE_LLMS_TXT = `# @sumi-forge/react — Guia Oficial para Agentes de IA (llms.txt)
+export const SUMI_FORGE_LLMS_TXT = `# @sumi-forge/react · Guia Oficial para Agentes de IA (llms.txt)
 
 > Biblioteca React & Motor Procedural em TypeScript para Pintura Japonesa Viva (Sumi-e, Suibokuga, Tarashikomi, Sansui / Shan-Shui e Ukiyo-e) em Canvas 2D a 60/120 FPS.
 
@@ -92,7 +92,7 @@ import {
 
 ## 2. Catálogo de Componentes React (Uso Declarativo)
 
-### 2.1 \`<SumiMaskReveal />\` — Revelação de Imagens a Pincel e Toque
+### 2.1 \`<SumiMaskReveal />\` · Revelação de Imagens a Pincel e Toque
 Revela qualquer imagem (\`src\`) com pinceladas animadas Multi-Cerdas Kasure + aguada Tarashikomi, permitindo que o usuário também pinte/revele com o dedo no celular ou mouse.
 
 \`\`\`tsx
@@ -111,7 +111,7 @@ Revela qualquer imagem (\`src\`) com pinceladas animadas Multi-Cerdas Kasure + a
 </div>
 \`\`\`
 
-### 2.2 \`<SumiSansui />\` — Paisagens Orientais Gerativas (Shan-Shui / Sansui 山水)
+### 2.2 \`<SumiSansui />\` · Paisagens Orientais Gerativas (Shan-Shui / Sansui 山水)
 Gera paisagens de montanhas, neblina, rios, florestas densas de pinheiros, pavilhão oriental (*Azumaya*), grous e barco solitário controladas deterministicamente por \`seed\`. Suporta auto-pintura progressiva ao entrar na tela (\`autoPaint\`, \`paintOnView\`) ou renderização estática imediata (\`autoPaint={false}\`).
 
 \`\`\`tsx
@@ -135,7 +135,7 @@ const sansuiRef = useRef<{ exportPng: (filename?: string) => void; replayPaint?:
 </div>
 \`\`\`
 
-### 2.3 \`<SumiLandscape />\` — Obra Procedural Viva do Monte Fuji & Sakura
+### 2.3 \`<SumiLandscape />\` · Obra Procedural Viva do Monte Fuji & Sakura
 Renderiza a cerimônia em 3 atos (Sol Carmesim em mancha de aquarela -> traços caligráficos do Monte Fuji e galhos -> florada de Sakura e pétalas ao vento).
 
 \`\`\`tsx
@@ -157,10 +157,10 @@ Renderiza a cerimônia em 3 atos (Sol Carmesim em mancha de aquarela -> traços 
 </div>
 \`\`\`
 
-### 2.4 \`<SumiBrushCanvas />\` — Atelier Interativo com Sensibilidade a Pressão e Velocidade
+### 2.4 \`<SumiBrushCanvas />\` · Atelier Interativo com Sensibilidade a Pressão e Velocidade
 Tela de pintura multi-camadas (\`'background' | 'midground' | 'foreground'\`) com 7 pincéis orientais (\`'sumi_kasure' | 'sakura_branch' | 'hokusai_wave' | 'suibokuga_flame' | 'kumo_cloud' | 'tarashikomi_wash' | 'rough_crystal'\`).
 
-### 2.5 \`<SumiSectionPainter />\` — Fundos de Seção Sincronizados com Scroll
+### 2.5 \`<SumiSectionPainter />\` · Fundos de Seção Sincronizados com Scroll
 Pinta cenários completos de fundo (\`theme="sakura_katana_canopy" | "koi_river_rapids" | "misty_mountains_sakura" | "enso_imperial_seal" | "header_single_stroke"\`).
 
 ### 2.6 \`<SumiButton />\`, \`<SumiIcon />\`, \`<SumiStroke />\` e \`<JapaneseCalligraphy />\`
@@ -184,7 +184,7 @@ Sempre limite \`dpr = Math.min(2, window.devicePixelRatio || 1)\` e pause anima�
    drawWashiPaperTexture(ctx, width, height, '#F4EFE6', '#141413', seed);
    \`\`\`
 
-2. **Mancha de Aquarela Úmida (*Tarashikomi* — Sol, Lua, Neblina Colorida, Sombras)**:
+2. **Mancha de Aquarela Úmida (*Tarashikomi*: Sol, Lua, Neblina Colorida, Sombras)**:
    \`\`\`ts
    drawTarashikomiWashBlob(
      ctx,

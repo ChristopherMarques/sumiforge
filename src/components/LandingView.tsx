@@ -362,13 +362,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                 active={showLayerScrollDrawer}
                 onClick={() => setShowLayerScrollDrawer((v) => !v)}
               >
-                <span
-                  className={`inline-flex items-center justify-center rounded-[2px] p-0.5 ${
-                    showLayerScrollDrawer ? 'bg-[#F7F3EB]' : ''
-                  }`}
-                >
-                  <SumiIcon name="layers" size={17} color="#11100E" />
-                </span>
+                <SumiIcon name="layers" size={16} />
                 <span>Camadas da Pintura</span>
               </SumiButton>
             </div>
@@ -475,9 +469,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                     className="flex-1"
                     onClick={() => onOpenPlayground('atelier')}
                   >
-                    <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                      <SumiIcon name="brush" size={18} color="#11100E" />
-                    </span>
+                    <SumiIcon name="brush" size={17} />
                     <span>Experimentar no Playground</span>
                   </SumiButton>
 
@@ -910,9 +902,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                       setShowcaseReplay((r) => r + 1);
                     }}
                   >
-                    <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                      <SumiIcon name="brush" size={14} color="#11100E" />
-                    </span>
+                    <SumiIcon name="brush" size={15} />
                     <span>Pintar com o Dedo</span>
                   </SumiButton>
 
@@ -1040,9 +1030,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                     ]);
                   }}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="replay" size={16} color="#11100E" />
-                  </span>
+                  <SumiIcon name="replay" size={16} />
                   <span>Sortear Novas Seeds</span>
                 </SumiButton>
 
@@ -1058,13 +1046,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                   }}
                   title="Alternar entre auto-pintura progressiva (autoPaint={true}) e pintura estática imediata (autoPaint={false})"
                 >
-                  <span
-                    className={`inline-flex items-center justify-center rounded-[2px] p-0.5 ${
-                      sansuiAutoPaint ? 'bg-[#F7F3EB]' : ''
-                    }`}
-                  >
-                    <SumiIcon name="brush" size={15} color="#11100E" />
-                  </span>
+                  <SumiIcon name="brush" size={16} />
                   <span>{sansuiAutoPaint ? 'Auto-Pintura: Ativa' : 'Modo Fixo: Ativo'}</span>
                 </SumiButton>
 
@@ -1736,9 +1718,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                 seed={191}
                 onClick={() => onOpenPlayground('atelier')}
               >
-                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                  <SumiIcon name="brush" size={18} color="#11100E" />
-                </span>
+                <SumiIcon name="brush" size={17} />
                 <span>Abrir Atelier de Pintura Livre</span>
               </SumiButton>
 
@@ -1748,9 +1728,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                 seed={192}
                 onClick={() => onOpenPlayground('mask')}
               >
-                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                  <SumiIcon name="eye" size={18} color="#11100E" />
-                </span>
+                <SumiIcon name="eye" size={17} />
                 <span>Testar Revelação de Imagens</span>
               </SumiButton>
             </div>
@@ -1817,9 +1795,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                   seed={801}
                   onClick={() => modalActionsRef.current?.exportPng()}
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="download" size={16} color="#11100E" />
-                  </span>
+                  <SumiIcon name="download" size={16} />
                   <span>Baixar PNG (Alta Resolução)</span>
                 </SumiButton>
 
@@ -1945,9 +1921,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                     )
                   }
                 >
-                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                    <SumiIcon name="replay" size={13} color="#11100E" />
-                  </span>
+                  <SumiIcon name="replay" size={15} />
                   <span>Nova Seed</span>
                 </SumiButton>
               </div>

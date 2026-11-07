@@ -78,7 +78,7 @@ export function renderVFXFrame(
   const cx = 64 * scale;
   const cy = 64 * scale;
 
-  // Aguada Atmosférica de Fundo (Tarashikomi — Técnica #09)
+  // Aguada Atmosférica de Fundo (Tarashikomi: Técnica #09)
   if (config.dynamics.glowIntensity > 0.2 && erosionProgress < 0.88) {
     drawTarashikomiWashBlob(
       ctx,

@@ -23,7 +23,7 @@ export interface SumiStrokeProps {
 }
 
 /**
- * Componente <SumiStroke /> — Pincelada caligráfica declarativa para divisores de seção,
+ * Componente <SumiStroke />: Pincelada caligráfica declarativa para divisores de seção,
  * sublinhados editoriais, selos Ensō e ramos ornamentais de Sakura.
  */
 export const SumiStroke: React.FC<SumiStrokeProps> = ({
