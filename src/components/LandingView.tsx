@@ -816,7 +816,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
               </div>
             </div>
 
-            {/* Seletor de Coreografia: Lado a lado em grade 2x2 no Mobile e em linha única no Tablet/Desktop */}
+            {/* Seletor de Coreografia: Lado a lado no Mobile e em linha no Tablet/Desktop, incluindo Pintar com o Dedo */}
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2 bg-[#F8F4EC]/82 backdrop-blur-xl p-2.5 rounded-xl border border-white/80 shadow-[0_8px_24px_rgba(17,16,14,0.05)] w-full max-w-2xl xl:w-auto mx-auto lg:mx-0">
               {(
                 [
@@ -824,15 +824,22 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                   { id: 'hokusai_tide', label: 'Correntes do Rio' },
                   { id: 'enso_spiral', label: 'Giro Zen Ensō' },
                   { id: 'fuji_masterpiece', label: 'Abertura Fuji' },
+                  { id: 'interactive_brush', label: 'Pintar com o Dedo' },
                 ] as const
               ).map((mode, idx) => (
                 <SumiButton
                   key={mode.id}
-                  variant={showcaseMaskMode === mode.id ? 'ink' : 'washi'}
+                  variant={
+                    showcaseMaskMode === mode.id
+                      ? 'ink'
+                      : mode.id === 'interactive_brush'
+                        ? 'crimson'
+                        : 'washi'
+                  }
                   size="sm"
                   seed={130 + idx}
                   fullWidth
-                  className="sm:w-auto"
+                  className={`sm:w-auto ${mode.id === 'interactive_brush' ? 'col-span-2 sm:col-span-1' : ''}`}
                   active={showcaseMaskMode === mode.id}
                   onClick={() => {
                     setShowcaseMaskMode(mode.id);
@@ -850,20 +857,37 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
             <div className="lg:col-span-8 border border-white/80 bg-[#F8F4EC]/72 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-[0_12px_36px_rgba(17,16,14,0.06)] flex flex-col justify-between gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-medium text-[#11100E]">
-                  Obra Revelada Dinamicamente (Arraste o mouse sobre a tela para pintar mais)
+                  Obra Revelada (Arraste o dedo no celular ou o mouse na tela para pintar)
                 </span>
-                <SumiButton
-                  variant="washi"
-                  size="xs"
-                  seed={141}
-                  onClick={() => setShowcaseReplay((r) => r + 1)}
-                >
-                  <SumiIcon name="replay" size={16} color="#11100E" />
-                  <span>Pintar Novamente</span>
-                </SumiButton>
+                <div className="flex items-center gap-1.5">
+                  <SumiButton
+                    variant={showcaseMaskMode === 'interactive_brush' ? 'ink' : 'crimson'}
+                    size="xs"
+                    seed={140}
+                    onClick={() => {
+                      setShowcaseMaskMode('interactive_brush');
+                      setShowcaseReplay((r) => r + 1);
+                    }}
+                  >
+                    <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                      <SumiIcon name="brush" size={14} color="#11100E" />
+                    </span>
+                    <span>Pintar com o Dedo</span>
+                  </SumiButton>
+
+                  <SumiButton
+                    variant="washi"
+                    size="xs"
+                    seed={141}
+                    onClick={() => setShowcaseReplay((r) => r + 1)}
+                  >
+                    <SumiIcon name="replay" size={16} color="#11100E" />
+                    <span>Repintar</span>
+                  </SumiButton>
+                </div>
               </div>
 
-              <div className="h-[240px] sm:h-[310px] md:h-[340px] rounded-xl border border-[#D5CEC0]/80 bg-[#F4F0E6]/85 overflow-hidden relative">
+              <div className="h-[260px] sm:h-[320px] md:h-[350px] rounded-xl border border-[#D5CEC0]/80 bg-[#F4F0E6]/85 overflow-hidden relative">
                 <SumiMaskReveal
                   src="/assets/aistudio/image_8f7809d3.png"
                   choreography={showcaseMaskMode}
@@ -874,6 +898,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                   showLiveInkAccents
                   replayTrigger={showcaseReplay}
                   interactiveBrush
+                  showTouchControls
                 />
               </div>
             </div>
@@ -882,7 +907,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
               <div>
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <span className="text-xs font-medium text-[#11100E]">
-                    Movimento do Pincel por Trás
+                    Movimento do Pincel por Trás (Toque também aqui)
                   </span>
                   <JapaneseCalligraphy
                     jp="飛白"
@@ -892,7 +917,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                   />
                 </div>
 
-                <div className="h-[200px] sm:h-[235px] rounded-xl border border-[#D5CEC0]/80 bg-[#F4F0E6]/85 overflow-hidden relative">
+                <div className="h-[210px] sm:h-[245px] rounded-xl border border-[#D5CEC0]/80 bg-[#F4F0E6]/85 overflow-hidden relative">
                   <SumiMaskReveal
                     src="/assets/aistudio/image_8f7809d3.png"
                     choreography={showcaseMaskMode}
@@ -903,6 +928,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                     maskOnlyPreview
                     replayTrigger={showcaseReplay}
                     interactiveBrush
+                    showTouchControls={false}
                   />
                 </div>
               </div>

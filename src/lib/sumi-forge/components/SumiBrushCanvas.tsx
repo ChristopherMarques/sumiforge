@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import rough from 'roughjs';
-import { createSeededRandom, samplesToSpine } from '../math';
 import { DEFAULT_VFX_CONFIG } from '../presets';
+import { createSeededRandom, samplesToSpine } from '../math';
 import {
-  drawFacetedRoughCrystal,
   drawFlamePetalTongue,
   drawHokusaiWaveCrest,
   drawSakuraBlossom,
@@ -16,39 +14,38 @@ import {
   InteractiveBrushType,
   RecordedBrushStroke,
   SumiColors,
+  VFXConfig,
 } from '../types';
 
 export interface SumiBrushCanvasProps {
-  /** Tipo de pincel japonês ativo */
-  activeBrush: InteractiveBrushType;
-  /** Paleta de 3 canais ativa */
-  colors: SumiColors;
-  /** Espessura base da pincelada (0.4 a 2.5) */
+  /** Tipo de pincel selecionado */
+  activeBrush?: InteractiveBrushType;
+  /** Paleta de cores atual */
+  colors?: SumiColors;
+  /** Multiplicador de espessura do pincel (0.4 a 2.5) */
   strokeThickness?: number;
-  /** Quantidade de cerdas de bambu (8 a 40) */
+  /** Quantidade de cerdas de bambu (6 a 40) */
   bristleCount?: number;
-  /** Falha de pincel seco Kasure (0.0 a 0.85) */
+  /** Intensidade de falha de pincel seco Kasure (0.0 a 0.85) */
   dryBrushGap?: number;
-  /** Camada de destino para novos traços */
+  /** Camada onde os novos traços serão gravados */
   activeLayer?: 'background' | 'midground' | 'foreground';
-  /** Intensidade/opacidade individual de cada camada (0.0 a 1.5) */
+  /** Opacidade individual de cada camada */
   layerOpacities?: {
     background: number;
     midground: number;
     foreground: number;
   };
-  /** Semente determinística */
-  seed?: number;
-  /** Exibe a imagem do Monte Fuji e Sakura como guia translúcido de decalque */
+  /** Exibe o guia translúcido da obra Monte Fuji & Sakura ao fundo */
   showReferenceGuide?: boolean;
-  /** Callback disparado sempre que a contagem de traços ou pressão atual muda */
-  onTelemetryChange?: (info: {
+  /** Callback de telemetria de pressão e velocidade em tempo real */
+  onTelemetryChange?: (telemetry: {
     pressure: number;
     velocity: number;
     strokeCount: number;
     isReplaying: boolean;
   }) => void;
-  /** Ref imperativa para disparar Replay Animado, Undo, Clear ou Exportar PNG */
+  /** Referência imperativa para ações externas (replay, limpar, desfazer, exportar PNG) */
   actionsRef?: React.MutableRefObject<{
     replayStrokes: () => void;
     undoStroke: () => void;
@@ -59,444 +56,556 @@ export interface SumiBrushCanvasProps {
   className?: string;
 }
 
+const DEFAULT_COLORS: SumiColors = {
+  inkPrimary: '#141413',
+  energySecondary: '#C8232C',
+  coreGlow: '#FFF5F5',
+  sporeAccent: '#4A4742',
+};
+
 /**
- * Componente <SumiBrushCanvas /> — Atelier de pintura interativa com suporte a pressão real de caneta
- * (`PointerEvent.pressure`) e pressão cinética inferida pela velocidade do mouse, controle de 3 camadas
- * e Replay Animado com cinética Sakuga.
+ * Traços iniciais responsivos inspirados na obra do Monte Fuji e Sakura
+ * Adaptam-se proporcionalmente à largura (w) e altura (h) do canvas em celulares, tablets e desktops
  */
+function buildStarterFujiStrokes(
+  colors: SumiColors,
+  w = 880,
+  h = 460
+): RecordedBrushStroke[] {
+  const sx = (x: number) => (x / 880) * w;
+  const sy = (y: number) => (y / 460) * h;
+  const scale = Math.max(0.55, Math.min(w / 820, h / 440));
+
+  return [
+    {
+      id: 'preset-sun-wash',
+      brushType: 'tarashikomi_wash',
+      layerId: 'background',
+      colors: { ...colors },
+      thickness: 3.4 * scale,
+      bristleCount: 22,
+      dryBrushGap: 0.2,
+      seed: 1011,
+      points: [
+        { x: sx(640), y: sy(130), pressure: 0.9, velocity: 0.12, timestamp: 0 },
+        { x: sx(690), y: sy(125), pressure: 0.95, velocity: 0.1, timestamp: 40 },
+        { x: sx(740), y: sy(140), pressure: 0.9, velocity: 0.12, timestamp: 80 },
+      ],
+    },
+    {
+      id: 'preset-fuji-left',
+      brushType: 'sumi_kasure',
+      layerId: 'midground',
+      colors: { ...colors },
+      thickness: 1.15 * scale,
+      bristleCount: 28,
+      dryBrushGap: 0.35,
+      seed: 2022,
+      points: [
+        { x: sx(625), y: sy(185), pressure: 0.85, velocity: 0.2, timestamp: 100 },
+        { x: sx(540), y: sy(245), pressure: 0.72, velocity: 0.35, timestamp: 160 },
+        { x: sx(440), y: sy(305), pressure: 0.55, velocity: 0.5, timestamp: 220 },
+        { x: sx(330), y: sy(345), pressure: 0.3, velocity: 0.75, timestamp: 280 },
+      ],
+    },
+    {
+      id: 'preset-fuji-right',
+      brushType: 'sumi_kasure',
+      layerId: 'midground',
+      colors: { ...colors },
+      thickness: 1.1 * scale,
+      bristleCount: 26,
+      dryBrushGap: 0.38,
+      seed: 3033,
+      points: [
+        { x: sx(648), y: sy(185), pressure: 0.85, velocity: 0.2, timestamp: 300 },
+        { x: sx(720), y: sy(250), pressure: 0.68, velocity: 0.42, timestamp: 360 },
+        { x: sx(815), y: sy(325), pressure: 0.4, velocity: 0.68, timestamp: 420 },
+      ],
+    },
+    {
+      id: 'preset-sakura-branch-main',
+      brushType: 'sakura_branch',
+      layerId: 'foreground',
+      colors: { ...colors },
+      thickness: 1.2 * scale,
+      bristleCount: 24,
+      dryBrushGap: 0.28,
+      seed: 4044,
+      points: [
+        { x: sx(35), y: sy(330), pressure: 0.95, velocity: 0.15, timestamp: 450 },
+        { x: sx(135), y: sy(240), pressure: 0.82, velocity: 0.28, timestamp: 520 },
+        { x: sx(235), y: sy(165), pressure: 0.68, velocity: 0.38, timestamp: 590 },
+        { x: sx(345), y: sy(115), pressure: 0.52, velocity: 0.52, timestamp: 660 },
+        { x: sx(460), y: sy(78), pressure: 0.35, velocity: 0.7, timestamp: 730 },
+      ],
+    },
+    {
+      id: 'preset-sakura-branch-lower',
+      brushType: 'sakura_branch',
+      layerId: 'foreground',
+      colors: { ...colors },
+      thickness: 0.95 * scale,
+      bristleCount: 20,
+      dryBrushGap: 0.32,
+      seed: 5055,
+      points: [
+        { x: sx(125), y: sy(245), pressure: 0.78, velocity: 0.24, timestamp: 760 },
+        { x: sx(235), y: sy(255), pressure: 0.65, velocity: 0.36, timestamp: 820 },
+        { x: sx(345), y: sy(285), pressure: 0.5, velocity: 0.48, timestamp: 880 },
+        { x: sx(455), y: sy(315), pressure: 0.32, velocity: 0.65, timestamp: 940 },
+      ],
+    },
+  ];
+}
+
+/**
+ * Renderiza um único traço gravado até o alcance `headReach` (0.0 a 1.0)
+ */
+function renderSingleRecordedStroke(
+  ctx: CanvasRenderingContext2D,
+  stroke: RecordedBrushStroke,
+  headReach = 1.0
+) {
+  if (stroke.points.length < 2 || headReach <= 0.01) return;
+
+  const spine = samplesToSpine(stroke.points, 0.14, stroke.seed);
+  const avgPressure =
+    stroke.points.reduce((acc, pt) => acc + pt.pressure, 0) / stroke.points.length;
+  const effectiveWidth = 32 * stroke.thickness * (0.45 + avgPressure * 0.85);
+  const { inkPrimary, energySecondary, coreGlow, sporeAccent } = stroke.colors;
+
+  const mockConfig: VFXConfig = {
+    ...DEFAULT_VFX_CONFIG,
+    colors: stroke.colors,
+    seed: stroke.seed,
+  };
+
+  if (stroke.brushType === 'tarashikomi_wash') {
+    const step = Math.max(1, Math.floor(spine.length / 7));
+    const maxIdx = Math.max(1, Math.floor(spine.length * headReach));
+    for (let i = 0; i < maxIdx; i += step) {
+      const pt = spine[i];
+      const ang = Math.atan2(-pt.nx, pt.ny);
+      drawTarashikomiWashBlob(
+        ctx,
+        pt.x,
+        pt.y,
+        effectiveWidth * 0.95 * (0.6 + avgPressure * 0.6),
+        effectiveWidth * 0.82 * (0.6 + avgPressure * 0.6),
+        ang,
+        energySecondary,
+        inkPrimary,
+        0.52,
+        stroke.seed + i * 19
+      );
+    }
+    return;
+  }
+
+  if (stroke.brushType === 'sumi_kasure') {
+    const midPt = spine[Math.floor(spine.length * 0.45)];
+    const startAngle = Math.atan2(-spine[0].nx, spine[0].ny);
+    drawTarashikomiWashBlob(
+      ctx,
+      midPt.x,
+      midPt.y,
+      effectiveWidth * 1.3,
+      effectiveWidth * 0.7,
+      startAngle,
+      sporeAccent,
+      inkPrimary,
+      0.16 * headReach,
+      stroke.seed + 7
+    );
+
+    drawSumiKasureRibbon(ctx, {
+      spine,
+      maxWidth: effectiveWidth,
+      bristleCount: stroke.bristleCount,
+      dryBrushGap: stroke.dryBrushGap,
+      taperStart: 0.22,
+      taperEnd: 0.58,
+      color: inkPrimary,
+      alpha: 0.95,
+      headReach,
+      seed: stroke.seed,
+    });
+    return;
+  }
+
+  if (stroke.brushType === 'sakura_branch') {
+    drawSumiKasureRibbon(ctx, {
+      spine,
+      maxWidth: effectiveWidth * 0.82,
+      bristleCount: stroke.bristleCount,
+      dryBrushGap: stroke.dryBrushGap * 0.9,
+      taperStart: 0.15,
+      taperEnd: 0.65,
+      color: inkPrimary,
+      alpha: 0.96,
+      headReach,
+      seed: stroke.seed,
+    });
+
+    const rand = createSeededRandom(stroke.seed + 333);
+    const maxIdx = Math.floor(spine.length * headReach);
+    for (let i = 2; i < maxIdx; i += 3) {
+      if (rand() < 0.22) continue;
+      const pt = spine[i];
+      const offsetNorm = (rand() - 0.48) * effectiveWidth * 1.15;
+      const bx = pt.x + pt.nx * offsetNorm;
+      const by = pt.y + pt.ny * offsetNorm;
+      const bRadius = (6.5 + rand() * 8.5) * (0.7 + avgPressure * 0.5);
+
+      if (rand() > 0.55) {
+        drawTarashikomiWashBlob(
+          ctx,
+          bx,
+          by,
+          bRadius * 1.45,
+          bRadius * 1.35,
+          rand() * Math.PI,
+          energySecondary,
+          inkPrimary,
+          0.24,
+          stroke.seed + i * 41
+        );
+      }
+
+      drawSakuraBlossom(
+        ctx,
+        bx,
+        by,
+        bRadius,
+        rand() * Math.PI * 2,
+        energySecondary,
+        coreGlow,
+        inkPrimary,
+        0.94,
+        stroke.seed + i * 29
+      );
+    }
+    return;
+  }
+
+  if (stroke.brushType === 'hokusai_wave') {
+    const activeSpine = spine.slice(0, Math.max(6, Math.floor(spine.length * headReach)));
+    drawHokusaiWaveCrest(
+      ctx,
+      null,
+      activeSpine,
+      effectiveWidth * 1.35,
+      1,
+      6,
+      mockConfig,
+      1.0,
+      0.95,
+      stroke.seed
+    );
+    return;
+  }
+
+  if (stroke.brushType === 'suibokuga_flame') {
+    const p0 = spine[0];
+    const p1 = spine[Math.floor(spine.length * 0.33 * headReach)] || p0;
+    const p2 = spine[Math.floor(spine.length * 0.66 * headReach)] || p1;
+    const p3 = spine[Math.max(1, Math.floor((spine.length - 1) * headReach))] || p2;
+    drawFlamePetalTongue(ctx, null, mockConfig, 1.0, {
+      rootX: p0.x,
+      rootY: p0.y,
+      ctrl1X: p1.x,
+      ctrl1Y: p1.y,
+      ctrl2X: p2.x,
+      ctrl2Y: p2.y,
+      tipX: p3.x,
+      tipY: p3.y,
+      maxBellyWidth: effectiveWidth * 1.4,
+      striationCount: 5,
+      alpha: 0.94,
+      seed: stroke.seed,
+    });
+    return;
+  }
+
+  if (stroke.brushType === 'kumo_cloud') {
+    const p0 = spine[0];
+    const pEnd = spine[Math.max(1, Math.floor((spine.length - 1) * headReach))] || p0;
+    drawUkiyoeCloudScrollVolute(ctx, null, mockConfig, 1.0, {
+      startX: p0.x,
+      startY: p0.y,
+      endX: pEnd.x,
+      endY: pEnd.y,
+      maxThickness: effectiveWidth * 1.25,
+      lobeCount: 3,
+      alpha: 0.92,
+      seed: stroke.seed,
+    });
+  }
+}
+
 export const SumiBrushCanvas: React.FC<SumiBrushCanvasProps> = ({
-  activeBrush,
-  colors,
-  strokeThickness = 1.2,
-  bristleCount = 24,
+  activeBrush = 'sakura_branch',
+  colors = DEFAULT_COLORS,
+  strokeThickness = 1.25,
+  bristleCount = 26,
   dryBrushGap = 0.32,
-  activeLayer = 'midground',
-  layerOpacities = { background: 1.0, midground: 1.0, foreground: 1.0 },
-  seed = 8472,
-  showReferenceGuide = false,
+  activeLayer = 'foreground',
+  layerOpacities = { background: 1, midground: 1, foreground: 1 },
+  showReferenceGuide = true,
   onTelemetryChange,
   actionsRef,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const strokesRef = useRef<RecordedBrushStroke[]>([]);
-  const currentPointsRef = useRef<BrushPointSample[]>([]);
-  const isDrawingRef = useRef(false);
-  const [replayState, setReplayState] = useState<{ active: boolean; progress: number }>({
-    active: false,
-    progress: 1,
-  });
-  const guideImgRef = useRef<HTMLImageElement | null>(null);
+  const completedCacheCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const completedCacheValidRef = useRef<boolean>(false);
+  const refImageRef = useRef<HTMLImageElement | null>(null);
+  const [refImageLoaded, setRefImageLoaded] = useState(false);
 
-  // Carrega a imagem de referência para modo decalque opcional
+  const strokesRef = useRef<RecordedBrushStroke[]>([]);
+  const starterInitializedRef = useRef<boolean>(false);
+  const activeStrokeRef = useRef<RecordedBrushStroke | null>(null);
+  const currentPointsRef = useRef<BrushPointSample[]>([]);
+  const replayStateRef = useRef<{ active: boolean; startTime: number; duration: number }>({
+    active: false,
+    startTime: 0,
+    duration: 2600,
+  });
+
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = '/assets/aistudio/image_8f7809d3.png';
     img.onload = () => {
-      guideImgRef.current = img;
+      refImageRef.current = img;
+      completedCacheValidRef.current = false;
+      setRefImageLoaded(true);
     };
+    img.src = '/assets/aistudio/image_8f7809d3.png';
   }, []);
 
-  const buildStarterFujiStrokes = useCallback((): RecordedBrushStroke[] => {
-    return [
-      {
-        id: 'starter-sun',
-        brushType: 'tarashikomi_wash',
-        layerId: 'background',
-        colors: {
-          inkPrimary: '#141413',
-          energySecondary: '#C8232C',
-          coreGlow: '#FFF5F5',
-          sporeAccent: '#E11D48',
-        },
-        thickness: 1.6,
-        bristleCount: 20,
-        dryBrushGap: 0.25,
-        seed: seed + 11,
-        points: [
-          { x: 680, y: 145, pressure: 0.95, velocity: 0.1, timestamp: 0 },
-          { x: 735, y: 155, pressure: 0.9, velocity: 0.15, timestamp: 40 },
-        ],
-      },
-      {
-        id: 'starter-fuji-left',
-        brushType: 'sumi_kasure',
-        layerId: 'midground',
-        colors: {
-          inkPrimary: '#141413',
-          energySecondary: '#4A5559',
-          coreGlow: '#FAF8F5',
-          sporeAccent: '#141413',
-        },
-        thickness: 1.35,
-        bristleCount: 26,
-        dryBrushGap: 0.38,
-        seed: seed + 33,
-        points: [
-          { x: 640, y: 245, pressure: 0.92, velocity: 0.2, timestamp: 0 },
-          { x: 560, y: 315, pressure: 0.75, velocity: 0.45, timestamp: 30 },
-          { x: 450, y: 375, pressure: 0.55, velocity: 0.7, timestamp: 60 },
-          { x: 330, y: 410, pressure: 0.25, velocity: 0.9, timestamp: 90 },
-        ],
-      },
-      {
-        id: 'starter-fuji-right',
-        brushType: 'sumi_kasure',
-        layerId: 'midground',
-        colors: {
-          inkPrimary: '#141413',
-          energySecondary: '#4A5559',
-          coreGlow: '#FAF8F5',
-          sporeAccent: '#141413',
-        },
-        thickness: 1.25,
-        bristleCount: 24,
-        dryBrushGap: 0.42,
-        seed: seed + 57,
-        points: [
-          { x: 675, y: 245, pressure: 0.9, velocity: 0.2, timestamp: 0 },
-          { x: 755, y: 320, pressure: 0.7, velocity: 0.5, timestamp: 30 },
-          { x: 855, y: 385, pressure: 0.35, velocity: 0.85, timestamp: 60 },
-        ],
-      },
-      {
-        id: 'starter-sakura-branch',
-        brushType: 'sakura_branch',
-        layerId: 'foreground',
-        colors: {
-          inkPrimary: '#141413',
-          energySecondary: '#C8232C',
-          coreGlow: '#FFF5F5',
-          sporeAccent: '#E11D48',
-        },
-        thickness: 1.45,
-        bristleCount: 28,
-        dryBrushGap: 0.3,
-        seed: seed + 89,
-        points: [
-          { x: 40, y: 345, pressure: 0.98, velocity: 0.1, timestamp: 0 },
-          { x: 165, y: 240, pressure: 0.86, velocity: 0.25, timestamp: 30 },
-          { x: 295, y: 155, pressure: 0.68, velocity: 0.45, timestamp: 60 },
-          { x: 445, y: 75, pressure: 0.35, velocity: 0.8, timestamp: 90 },
-        ],
-      },
-    ];
-  }, [seed]);
+  const invalidateCompletedCache = useCallback(() => {
+    completedCacheValidRef.current = false;
+  }, []);
 
-  // Inicializa com traços demonstrativos na primeira montagem
-  useEffect(() => {
-    if (strokesRef.current.length === 0) {
-      strokesRef.current = buildStarterFujiStrokes();
-    }
-  }, [buildStarterFujiStrokes]);
+  const renderBaseAndCompletedStrokes = useCallback(
+    (targetCtx: CanvasRenderingContext2D, w: number, h: number, dpr: number) => {
+      targetCtx.save();
+      targetCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      targetCtx.clearRect(0, 0, w, h);
 
-  const drawSingleRecordedStroke = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      rc: ReturnType<typeof rough.canvas> | null,
-      stroke: RecordedBrushStroke,
-      headReach = 1.0,
-      alphaMultiplier = 1.0
-    ) => {
-      const pts = stroke.points;
-      if (pts.length < 2 || alphaMultiplier <= 0.01) return;
+      // 1. Papel Washi fibras sutis
+      targetCtx.fillStyle = '#F4F1EA';
+      targetCtx.fillRect(0, 0, w, h);
 
-      const spine = samplesToSpine(pts, 0.14, stroke.seed);
-      if (spine.length < 2) return;
-
-      const avgPressure =
-        pts.reduce((sum, p) => sum + p.pressure, 0) / Math.max(1, pts.length);
-      const baseWidth = 22 * stroke.thickness * (0.55 + avgPressure * 0.75);
-      const vfxCfg = {
-        ...DEFAULT_VFX_CONFIG,
-        colors: stroke.colors,
-        seed: stroke.seed,
-      };
-
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, alphaMultiplier);
-
-      if (stroke.brushType === 'sumi_kasure') {
-        drawSumiKasureRibbon(ctx, {
-          spine,
-          maxWidth: baseWidth,
-          bristleCount: stroke.bristleCount,
-          dryBrushGap: stroke.dryBrushGap,
-          taperStart: 0.25,
-          taperEnd: 0.92,
-          color: stroke.colors.inkPrimary,
-          alpha: alphaMultiplier,
-          headReach,
-          roundHeadCap: true,
-          seed: stroke.seed,
-        });
-      } else if (stroke.brushType === 'sakura_branch') {
-        drawSumiKasureRibbon(ctx, {
-          spine,
-          maxWidth: baseWidth * 1.15,
-          bristleCount: stroke.bristleCount,
-          dryBrushGap: stroke.dryBrushGap,
-          taperStart: 0.15,
-          taperEnd: 0.95,
-          color: stroke.colors.inkPrimary,
-          alpha: alphaMultiplier,
-          headReach,
-          roundHeadCap: true,
-          seed: stroke.seed,
-        });
-
-        const rand = createSeededRandom(stroke.seed + 55);
-        const blossomCount = Math.max(4, Math.floor(spine.length / 4));
-        for (let b = 0; b < blossomCount; b++) {
-          const tPos = (b + 0.5) / blossomCount;
-          if (tPos > headReach) continue;
-          const pt = spine[Math.min(spine.length - 1, Math.floor(tPos * (spine.length - 1)))];
-          const offset = (rand() - 0.45) * baseWidth * 1.1;
-          drawSakuraBlossom(
-            ctx,
-            pt.x + pt.nx * offset,
-            pt.y + pt.ny * offset,
-            (8 + rand() * 8) * stroke.thickness,
-            b * 0.8,
-            stroke.colors.energySecondary,
-            stroke.colors.coreGlow,
-            stroke.colors.inkPrimary,
-            alphaMultiplier * 0.96,
-            stroke.seed + b * 29
-          );
+      // 2. Guia translúcido da obra Monte Fuji & Sakura
+      if (showReferenceGuide && refImageLoaded && refImageRef.current) {
+        targetCtx.save();
+        targetCtx.globalAlpha = 0.14;
+        const img = refImageRef.current;
+        const imgRatio = img.width / Math.max(1, img.height);
+        const cRatio = w / h;
+        let dw = w;
+        let dh = h;
+        let dx = 0;
+        let dy = 0;
+        if (cRatio > imgRatio) {
+          dw = w;
+          dh = w / imgRatio;
+          dy = (h - dh) * 0.5;
+        } else {
+          dh = h;
+          dw = h * imgRatio;
+          dx = (w - dw) * 0.5;
         }
-      } else if (stroke.brushType === 'hokusai_wave') {
-        const sliced = spine.filter((p) => p.t <= headReach);
-        if (sliced.length >= 6) {
-          drawHokusaiWaveCrest(
-            ctx,
-            rc,
-            sliced.map((p, i, arr) => ({ ...p, t: i / Math.max(1, arr.length - 1) })),
-            baseWidth * 1.35,
-            1,
-            5,
-            vfxCfg,
-            1.1,
-            alphaMultiplier,
-            stroke.seed
-          );
-        }
-      } else if (stroke.brushType === 'suibokuga_flame') {
-        const p0 = spine[0];
-        const pMid1 = spine[Math.floor(spine.length * 0.33)];
-        const pMid2 = spine[Math.floor(spine.length * 0.66)];
-        const pEnd = spine[Math.min(spine.length - 1, Math.floor(headReach * (spine.length - 1)))];
-        drawFlamePetalTongue(ctx, rc, vfxCfg, 1.1, {
-          rootX: p0.x,
-          rootY: p0.y,
-          ctrl1X: pMid1.x + pMid1.nx * 18,
-          ctrl1Y: pMid1.y + pMid1.ny * 18,
-          ctrl2X: pMid2.x - pMid2.nx * 18,
-          ctrl2Y: pMid2.y - pMid2.ny * 18,
-          tipX: pEnd.x,
-          tipY: pEnd.y,
-          maxBellyWidth: baseWidth * 1.4,
-          striationCount: 6,
-          alpha: alphaMultiplier,
-          seed: stroke.seed,
-        });
-      } else if (stroke.brushType === 'kumo_cloud') {
-        const p0 = spine[0];
-        const pEnd = spine[Math.min(spine.length - 1, Math.floor(headReach * (spine.length - 1)))];
-        drawUkiyoeCloudScrollVolute(ctx, rc, vfxCfg, 1.1, {
-          startX: p0.x,
-          startY: p0.y,
-          endX: pEnd.x,
-          endY: pEnd.y,
-          maxThickness: baseWidth * 1.5,
-          lobeCount: 3,
-          flip: 1,
-          alpha: alphaMultiplier,
-          seed: stroke.seed,
-        });
-      } else if (stroke.brushType === 'tarashikomi_wash') {
-        const step = Math.max(1, Math.floor(spine.length / 5));
-        for (let i = 0; i < spine.length; i += step) {
-          const pt = spine[i];
-          if (pt.t > headReach) break;
-          drawTarashikomiWashBlob(
-            ctx,
-            pt.x,
-            pt.y,
-            baseWidth * 2.1,
-            baseWidth * 1.85,
-            pt.t * Math.PI,
-            stroke.colors.coreGlow,
-            stroke.colors.energySecondary,
-            alphaMultiplier * 0.72,
-            stroke.seed + i * 13
-          );
-        }
-      } else if (stroke.brushType === 'rough_crystal') {
-        const p0 = spine[0];
-        const pEnd = spine[Math.min(spine.length - 1, Math.floor(headReach * (spine.length - 1)))];
-        const dx = pEnd.x - p0.x;
-        const dy = pEnd.y - p0.y;
-        const len = Math.hypot(dx, dy);
-        const ang = Math.atan2(dy, dx);
-        drawFacetedRoughCrystal(
-          ctx,
-          rc,
-          p0.x,
-          p0.y,
-          ang,
-          len,
-          baseWidth * 1.1,
-          vfxCfg,
-          1.1,
-          stroke.seed
-        );
+        targetCtx.drawImage(img, dx, dy, dw, dh);
+        targetCtx.restore();
       }
 
-      ctx.restore();
+      const layersOrder: ('background' | 'midground' | 'foreground')[] = [
+        'background',
+        'midground',
+        'foreground',
+      ];
+
+      layersOrder.forEach((layerName) => {
+        const layerAlpha = layerOpacities[layerName] ?? 1;
+        if (layerAlpha <= 0.01) return;
+
+        targetCtx.save();
+        targetCtx.globalAlpha = layerAlpha;
+
+        strokesRef.current.forEach((st) => {
+          if (st.layerId !== layerName) return;
+          renderSingleRecordedStroke(targetCtx, st, 1.0);
+        });
+
+        targetCtx.restore();
+      });
+
+      targetCtx.restore();
     },
-    []
+    [layerOpacities, refImageLoaded, showReferenceGuide]
   );
 
   const renderAll = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = Math.max(320, Math.floor(rect.width));
-    const h = Math.max(240, Math.floor(rect.height));
+    const dpr = Math.min(1.75, window.devicePixelRatio || 1);
+    const w = Math.max(240, canvas.clientWidth || 640);
+    const h = Math.max(180, canvas.clientHeight || 420);
 
-    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
+    // Inicializa os traços responsivos na primeira medição real do canvas
+    if (!starterInitializedRef.current && w > 0 && h > 0) {
+      strokesRef.current = buildStarterFujiStrokes(colors, w, h);
+      starterInitializedRef.current = true;
+      completedCacheValidRef.current = false;
+    }
+
+    if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      completedCacheValidRef.current = false;
+    }
+
+    if (!completedCacheCanvasRef.current) {
+      completedCacheCanvasRef.current = document.createElement('canvas');
+    }
+    const cacheCanvas = completedCacheCanvasRef.current;
+    if (cacheCanvas.width !== canvas.width || cacheCanvas.height !== canvas.height) {
+      cacheCanvas.width = canvas.width;
+      cacheCanvas.height = canvas.height;
+      completedCacheValidRef.current = false;
     }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const cacheCtx = cacheCanvas.getContext('2d');
+    if (!ctx || !cacheCtx) return;
+
+    const now = performance.now();
+    const isReplaying = replayStateRef.current.active;
+    const replayProg = isReplaying
+      ? Math.min(1, (now - replayStateRef.current.startTime) / replayStateRef.current.duration)
+      : 1;
+
+    if (isReplaying) {
+      ctx.save();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#F4F1EA';
+      ctx.fillRect(0, 0, w, h);
+
+      const layersOrder: ('background' | 'midground' | 'foreground')[] = [
+        'background',
+        'midground',
+        'foreground',
+      ];
+      const totalStrokes = Math.max(1, strokesRef.current.length);
+
+      layersOrder.forEach((layerName) => {
+        const layerAlpha = layerOpacities[layerName] ?? 1;
+        if (layerAlpha <= 0.01) return;
+        ctx.save();
+        ctx.globalAlpha = layerAlpha;
+
+        strokesRef.current.forEach((st, idx) => {
+          if (st.layerId !== layerName) return;
+          const stStart = idx / totalStrokes;
+          const stEnd = (idx + 1) / totalStrokes;
+          const reach = Math.max(0, Math.min(1, (replayProg - stStart) / (stEnd - stStart)));
+          renderSingleRecordedStroke(ctx, st, reach);
+        });
+
+        ctx.restore();
+      });
+
+      ctx.restore();
+      return;
+    }
+
+    // Usa o cache offscreen para os traços já finalizados (mantém 60/120 FPS ao arrastar o dedo no mobile)
+    if (!completedCacheValidRef.current) {
+      renderBaseAndCompletedStrokes(cacheCtx, w, h, dpr);
+      completedCacheValidRef.current = true;
+    }
 
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(cacheCanvas, 0, 0, w, h);
 
-    // Guia translúcido opcional da pintura de referência
-    if (showReferenceGuide && guideImgRef.current) {
-      ctx.save();
-      ctx.globalAlpha = 0.16;
-      ctx.drawImage(guideImgRef.current, 0, 0, w, h);
-      ctx.restore();
-    }
-
-    let rc: ReturnType<typeof rough.canvas> | null = null;
-    try {
-      rc = rough.canvas(canvas);
-    } catch {
-      rc = null;
-    }
-
-    const allStrokes = strokesRef.current;
-    const totalCount = allStrokes.length;
-    const orderedLayers: ('background' | 'midground' | 'foreground')[] = [
-      'background',
-      'midground',
-      'foreground',
-    ];
-
-    orderedLayers.forEach((layerKey) => {
-      const layerAlpha = layerOpacities[layerKey] ?? 1.0;
-      if (layerAlpha <= 0.01) return;
-
-      allStrokes.forEach((st, idx) => {
-        if (st.layerId !== layerKey) return;
-        let reach = 1.0;
-        if (replayState.active && totalCount > 0) {
-          const strokeStart = idx / totalCount;
-          const strokeEnd = (idx + 1) / totalCount;
-          reach = Math.max(
-            0,
-            Math.min(1, (replayState.progress - strokeStart) / Math.max(0.01, strokeEnd - strokeStart))
-          );
-        }
-        if (reach > 0.01) {
-          drawSingleRecordedStroke(ctx, rc, st, reach, layerAlpha);
-        }
-      });
-    });
-
-    // Traço sendo desenhado neste instante
-    if (isDrawingRef.current && currentPointsRef.current.length >= 2) {
-      drawSingleRecordedStroke(
-        ctx,
-        rc,
-        {
-          id: 'live-stroke',
-          brushType: activeBrush,
-          points: currentPointsRef.current,
-          colors,
-          thickness: strokeThickness,
-          bristleCount,
-          dryBrushGap,
-          seed: seed + strokesRef.current.length * 41,
-          layerId: activeLayer,
-        },
-        1.0,
-        layerOpacities[activeLayer] ?? 1.0
-      );
+    if (activeStrokeRef.current) {
+      const layerAlpha = layerOpacities[activeStrokeRef.current.layerId] ?? 1;
+      ctx.globalAlpha = layerAlpha;
+      renderSingleRecordedStroke(ctx, activeStrokeRef.current, 1.0);
     }
 
     ctx.restore();
+  }, [colors, layerOpacities, renderBaseAndCompletedStrokes]);
+
+  useEffect(() => {
+    invalidateCompletedCache();
+    renderAll();
   }, [
-    activeBrush,
-    activeLayer,
-    bristleCount,
-    colors,
-    drawSingleRecordedStroke,
-    dryBrushGap,
+    invalidateCompletedCache,
+    renderAll,
     layerOpacities,
-    replayState,
-    seed,
     showReferenceGuide,
-    strokeThickness,
+    refImageLoaded,
   ]);
 
   useEffect(() => {
-    renderAll();
-  }, [renderAll]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ro = new ResizeObserver(() => {
+      invalidateCompletedCache();
+      renderAll();
+    });
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, [invalidateCompletedCache, renderAll]);
 
-  // Loop de Replay Animado
-  useEffect(() => {
-    if (!replayState.active) return;
-    let animId = 0;
-    const start = performance.now();
-    const durationMs = Math.max(1600, strokesRef.current.length * 480);
-
-    const step = (now: number) => {
-      const p = Math.min(1, (now - start) / durationMs);
-      setReplayState({ active: p < 1, progress: p });
-      onTelemetryChange?.({
-        pressure: 0.75,
-        velocity: 0.4,
-        strokeCount: strokesRef.current.length,
-        isReplaying: p < 1,
-      });
-      if (p < 1) {
-        animId = requestAnimationFrame(step);
-      }
+  const startReplay = useCallback(() => {
+    replayStateRef.current = {
+      active: true,
+      startTime: performance.now(),
+      duration: Math.max(1400, strokesRef.current.length * 420),
     };
 
-    animId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(animId);
-  }, [replayState.active, onTelemetryChange]);
+    const step = () => {
+      if (!replayStateRef.current.active) return;
+      const elapsed = performance.now() - replayStateRef.current.startTime;
+      renderAll();
+      if (elapsed < replayStateRef.current.duration) {
+        requestAnimationFrame(step);
+      } else {
+        replayStateRef.current.active = false;
+        invalidateCompletedCache();
+        renderAll();
+        onTelemetryChange?.({
+          pressure: 0,
+          velocity: 0,
+          strokeCount: strokesRef.current.length,
+          isReplaying: false,
+        });
+      }
+    };
+    onTelemetryChange?.({
+      pressure: 0.75,
+      velocity: 0.5,
+      strokeCount: strokesRef.current.length,
+      isReplaying: true,
+    });
+    requestAnimationFrame(step);
+  }, [invalidateCompletedCache, onTelemetryChange, renderAll]);
 
-  // Expõe ações imperativas para a barra de ferramentas do Playground
   useEffect(() => {
     if (!actionsRef) return;
     actionsRef.current = {
-      replayStrokes: () => {
-        setReplayState({ active: true, progress: 0 });
-      },
+      replayStrokes: startReplay,
       undoStroke: () => {
         strokesRef.current = strokesRef.current.slice(0, -1);
+        invalidateCompletedCache();
         renderAll();
         onTelemetryChange?.({
           pressure: 0,
@@ -507,6 +616,7 @@ export const SumiBrushCanvas: React.FC<SumiBrushCanvasProps> = ({
       },
       clearCanvas: () => {
         strokesRef.current = [];
+        invalidateCompletedCache();
         renderAll();
         onTelemetryChange?.({
           pressure: 0,
@@ -516,8 +626,12 @@ export const SumiBrushCanvas: React.FC<SumiBrushCanvasProps> = ({
         });
       },
       loadFujiPresetStrokes: () => {
-        strokesRef.current = buildStarterFujiStrokes();
-        setReplayState({ active: true, progress: 0 });
+        const canvas = canvasRef.current;
+        const w = Math.max(260, canvas?.clientWidth || 880);
+        const h = Math.max(200, canvas?.clientHeight || 460);
+        strokesRef.current = buildStarterFujiStrokes(colors, w, h);
+        invalidateCompletedCache();
+        startReplay();
       },
       exportPng: () => {
         const canvas = canvasRef.current;
@@ -528,89 +642,116 @@ export const SumiBrushCanvas: React.FC<SumiBrushCanvasProps> = ({
         link.click();
       },
     };
-  }, [actionsRef, buildStarterFujiStrokes, onTelemetryChange, renderAll]);
+  }, [actionsRef, colors, invalidateCompletedCache, onTelemetryChange, renderAll, startReplay]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pressure = e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : 0.82;
-    isDrawingRef.current = true;
-    currentPointsRef.current = [
-      {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-        pressure,
-        velocity: 0,
-        timestamp: performance.now(),
-      },
-    ];
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignora em navegadores que não suportam pointer capture
+    }
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const pressure = e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : 0.72;
+    const now = performance.now();
+
+    currentPointsRef.current = [{ x, y, pressure, velocity: 0.15, timestamp: now }];
+    activeStrokeRef.current = {
+      id: `stroke-${Date.now()}`,
+      brushType: activeBrush,
+      layerId: activeLayer,
+      colors: { ...colors },
+      thickness: strokeThickness,
+      bristleCount,
+      dryBrushGap,
+      seed: Math.floor(Math.random() * 90000) + 1000,
+      points: currentPointsRef.current,
+    };
+
     onTelemetryChange?.({
       pressure,
-      velocity: 0,
-      strokeCount: strokesRef.current.length,
+      velocity: 0.15,
+      strokeCount: strokesRef.current.length + 1,
       isReplaying: false,
     });
-    renderAll();
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
+    if (!activeStrokeRef.current || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const prev = currentPointsRef.current[currentPointsRef.current.length - 1];
     const now = performance.now();
-    const dist = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
-    if (dist < 2.5) return;
 
-    const dt = Math.max(1, now - (prev?.timestamp ?? now));
-    const velocity = Math.min(1, dist / dt / 1.8);
-    // Quando o hardware não informa pressão variável (mouse padrão envia 0.5), simula pressão caligráfica pela velocidade
-    const inferredPressure = Math.max(0.18, Math.min(1, 0.95 - velocity * 0.68));
-    const pressure =
-      e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : inferredPressure;
+    const prev = currentPointsRef.current[currentPointsRef.current.length - 1];
+    const dist = prev ? Math.hypot(x - prev.x, y - prev.y) : 0;
+    if (dist < 3.0) return;
+
+    const dt = Math.max(1, now - (prev?.timestamp || now - 16));
+    const velocity = Math.min(1, dist / dt / 2.2);
+    const simulatedPressure = Math.max(0.22, Math.min(1, 0.94 - velocity * 0.62));
+    const hardwarePressure =
+      e.pressure > 0 && e.pressure !== 0.5 ? e.pressure : simulatedPressure;
 
     currentPointsRef.current.push({
       x,
       y,
-      pressure,
+      pressure: hardwarePressure,
       velocity,
       timestamp: now,
     });
+    activeStrokeRef.current.points = currentPointsRef.current;
 
+    renderAll();
     onTelemetryChange?.({
-      pressure,
+      pressure: hardwarePressure,
       velocity,
-      strokeCount: strokesRef.current.length,
+      strokeCount: strokesRef.current.length + 1,
       isReplaying: false,
     });
-    renderAll();
   };
 
   const handlePointerUp = () => {
-    if (!isDrawingRef.current) return;
-    isDrawingRef.current = false;
-    if (currentPointsRef.current.length >= 2) {
-      strokesRef.current.push({
-        id: `stroke-${Date.now()}-${strokesRef.current.length}`,
-        brushType: activeBrush,
-        points: [...currentPointsRef.current],
-        colors: { ...colors },
-        thickness: strokeThickness,
-        bristleCount,
-        dryBrushGap,
-        seed: seed + strokesRef.current.length * 41,
-        layerId: activeLayer,
-      });
+    if (!activeStrokeRef.current) return;
+    // Suporte a toque simples no celular: se o usuário apenas tocou 1 ponto na tela,
+    // sintetiza um gesto curto para estampar a flor de Sakura, mancha Tarashikomi ou pincelada
+    if (currentPointsRef.current.length === 1) {
+      const p0 = currentPointsRef.current[0];
+      currentPointsRef.current.push(
+        {
+          x: p0.x + 18,
+          y: p0.y - 8,
+          pressure: p0.pressure * 0.95,
+          velocity: 0.18,
+          timestamp: p0.timestamp + 16,
+        },
+        {
+          x: p0.x + 36,
+          y: p0.y - 14,
+          pressure: p0.pressure * 0.75,
+          velocity: 0.25,
+          timestamp: p0.timestamp + 32,
+        }
+      );
+      activeStrokeRef.current.points = currentPointsRef.current;
     }
+
+    if (currentPointsRef.current.length >= 2) {
+      strokesRef.current.push(activeStrokeRef.current);
+      invalidateCompletedCache();
+    }
+    activeStrokeRef.current = null;
     currentPointsRef.current = [];
+    renderAll();
     onTelemetryChange?.({
       pressure: 0,
       velocity: 0,
       strokeCount: strokesRef.current.length,
       isReplaying: false,
     });
-    renderAll();
   };
 
   return (
@@ -620,7 +761,8 @@ export const SumiBrushCanvas: React.FC<SumiBrushCanvasProps> = ({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      className={`block w-full h-full touch-none cursor-crosshair select-none ${className}`}
+      style={{ touchAction: 'none' }}
+      className={`block w-full h-full cursor-crosshair touch-none select-none ${className}`}
     />
   );
 };
