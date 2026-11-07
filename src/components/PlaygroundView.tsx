@@ -16,6 +16,8 @@ import {
   SansuiComposition,
   SansuiThemeId,
   SchoolId,
+  SUMI_FORGE_AGENT_PROMPTS,
+  SUMI_FORGE_LLMS_TXT,
   SumiBrushCanvas,
   SumiButton,
   SumiIcon,
@@ -40,6 +42,8 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
     initialTab
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showLlmsModal, setShowLlmsModal] = useState<boolean>(false);
+  const [llmsModalTab, setLlmsModalTab] = useState<'prompts' | 'spec'>('prompts');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // ===========================================================================
@@ -227,6 +231,16 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   };
 
+  const handleDownloadLlmsTxt = () => {
+    const blob = new Blob([SUMI_FORGE_LLMS_TXT], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'llms.txt';
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  };
+
   const generatedJSX =
     activeTab === 'mask'
       ? `import { SumiMaskReveal } from '@sumi-forge/react';
@@ -319,20 +333,39 @@ export function GenerativeSansuiArtwork() {
     <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
       {/* Cabeçalho do Playground & Seletor de Bancadas com Botões Rough.js */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-5 sm:pb-6 mb-6 sm:mb-8 border-b border-[#D5CEC0]">
-        <div>
-          <div className="flex items-center gap-2.5 text-xs text-[#3F3D39] mb-1">
-            <JapaneseCalligraphy
-              jp="道場"
-              romaji="Dōjō"
-              pt="Lugar de criação, prática e domínio da arte"
-              variant="hanko"
-              tooltipPlacement="bottom"
-            />
-            <span>Estúdio Criativo @sumi-forge/react</span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2.5 text-xs text-[#3F3D39] mb-1">
+              <JapaneseCalligraphy
+                jp="道場"
+                romaji="Dōjō"
+                pt="Lugar de criação, prática e domínio da arte"
+                variant="hanko"
+                tooltipPlacement="bottom"
+              />
+              <span>Estúdio Criativo @sumi-forge/react</span>
+              <span aria-hidden="true">·</span>
+              <span className="font-tabular text-[#C8232C] font-medium">
+                100% Tipado (IntelliSense)
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-[#11100E]">
+              Playground &amp; Forja de Componentes
+            </h1>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#11100E]">
-            Playground &amp; Forja de Componentes
-          </h1>
+
+          <SumiButton
+            variant="crimson"
+            size="sm"
+            seed={195}
+            onClick={() => setShowLlmsModal(true)}
+            title="Abrir Guia llms.txt para Agentes de IA (Cursor, Claude, Windsurf, Copilot)"
+          >
+            <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+              <SumiIcon name="terminal" size={16} color="#11100E" />
+            </span>
+            <span>Guia IA · llms.txt</span>
+          </SumiButton>
         </div>
 
         {/* 5 Bancadas de Trabalho com Caixas Rough.js */}
@@ -2021,6 +2054,239 @@ export function GenerativeSansuiArtwork() {
                   <span>Fechar</span>
                 </SumiButton>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Guia llms.txt para Agentes de IA & Criação Procedural */}
+      {showLlmsModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[110] bg-[#11100E]/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
+        >
+          <div className="w-full max-w-5xl max-h-[90vh] flex flex-col rounded-2xl bg-[#F4EFE6] border border-[#11100E] shadow-2xl overflow-hidden">
+            {/* Cabeçalho do Modal */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-[#E6DFD1] border-b border-[#D5CEC0]">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-[#3F3D39] mb-1">
+                  <JapaneseCalligraphy
+                    jp="秘伝書"
+                    romaji="Hidensho"
+                    pt="Pergaminho secreto de transmissão das técnicas da forja"
+                    variant="hanko"
+                    tooltipPlacement="bottom"
+                  />
+                  <span>Guia Oficial para Agentes de IA (Cursor · Claude Code · Windsurf · Copilot)</span>
+                  <span aria-hidden="true">·</span>
+                  <a
+                    href="/llms.txt"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-tabular text-[#C8232C] underline hover:text-[#11100E]"
+                  >
+                    /llms.txt
+                  </a>
+                </div>
+                <h2 className="text-lg sm:text-xl font-semibold text-[#11100E]">
+                  Implementação Declarativa &amp; Criação de Novas Artes Procedurais
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <SumiButton
+                  variant="crimson"
+                  size="sm"
+                  seed={940}
+                  onClick={() => handleCopy(SUMI_FORGE_LLMS_TXT, 'llms-full')}
+                >
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon
+                      name={copiedId === 'llms-full' ? 'check' : 'copy'}
+                      size={15}
+                      color="#11100E"
+                    />
+                  </span>
+                  <span>
+                    {copiedId === 'llms-full' ? 'llms.txt Copiado!' : 'Copiar llms.txt Completo'}
+                  </span>
+                </SumiButton>
+
+                <SumiButton
+                  variant="ink"
+                  size="sm"
+                  seed={941}
+                  onClick={handleDownloadLlmsTxt}
+                >
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon name="download" size={15} color="#11100E" />
+                  </span>
+                  <span>Baixar llms.txt</span>
+                </SumiButton>
+
+                <SumiButton
+                  variant="washi"
+                  size="sm"
+                  seed={942}
+                  onClick={() => setShowLlmsModal(false)}
+                >
+                  <SumiIcon name="close" size={16} color="#11100E" />
+                  <span>Fechar</span>
+                </SumiButton>
+              </div>
+            </div>
+
+            {/* Seletor de Abas do Modal */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 bg-[#EFE9DA] border-b border-[#D5CEC0]">
+              <div className="flex flex-wrap items-center gap-2">
+                <SumiButton
+                  variant={llmsModalTab === 'prompts' ? 'ink' : 'washi'}
+                  size="xs"
+                  seed={945}
+                  active={llmsModalTab === 'prompts'}
+                  onClick={() => setLlmsModalTab('prompts')}
+                >
+                  <span>1. Prompts Prontos para seu Agente</span>
+                </SumiButton>
+                <SumiButton
+                  variant={llmsModalTab === 'spec' ? 'ink' : 'washi'}
+                  size="xs"
+                  seed={946}
+                  active={llmsModalTab === 'spec'}
+                  onClick={() => setLlmsModalTab('spec')}
+                >
+                  <span>2. Especificação Completa (llms.txt)</span>
+                </SumiButton>
+              </div>
+              <span className="text-xs text-[#3F3D39]">
+                Inclui todas as primitivas exportadas (Washi, Tarashikomi, Kasure, Sakura e Sansui)
+              </span>
+            </div>
+
+            {/* Corpo do Modal com Scroller Customizado */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+              {llmsModalTab === 'prompts' ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl bg-[#E6DFD1]/70 border border-[#D5CEC0] text-xs sm:text-sm text-[#2C2A27] leading-relaxed">
+                    Escolha abaixo o que deseja construir e clique em{' '}
+                    <strong className="text-[#11100E]">Copiar Prompt + Contexto</strong>. O texto
+                    copiado já leva toda a documentação tipada de{' '}
+                    <code className="font-tabular text-[#C8232C]">@sumi-forge/react</code> e as
+                    funções procedurais de baixo nível para que seu Agente de IA saiba usar os
+                    componentes prontos ou criar pinturas totalmente inéditas.
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {SUMI_FORGE_AGENT_PROMPTS.map((tpl, idx) => (
+                      <div
+                        key={tpl.id}
+                        className="flex flex-col justify-between p-4 rounded-xl bg-[#FAF7F0] border border-[#D5CEC0] space-y-4"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2 text-xs text-[#3F3D39]">
+                            <JapaneseCalligraphy
+                              jp={tpl.jp}
+                              romaji={tpl.romaji}
+                              pt={tpl.ptMeaning}
+                              variant="hanko"
+                              tooltipPlacement="top"
+                            />
+                            <span className="font-tabular text-[#C8232C] font-medium">
+                              {tpl.category === 'procedural'
+                                ? 'Motor Procedural'
+                                : 'Componente React'}
+                            </span>
+                          </div>
+                          <h3 className="text-base font-semibold text-[#11100E]">{tpl.title}</h3>
+                          <p className="text-xs text-[#3F3D39] leading-relaxed">{tpl.summary}</p>
+                        </div>
+
+                        <SumiButton
+                          variant={tpl.category === 'procedural' ? 'crimson' : 'ink'}
+                          size="sm"
+                          seed={950 + idx}
+                          fullWidth
+                          onClick={() => handleCopy(tpl.prompt, tpl.id)}
+                        >
+                          <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                            <SumiIcon
+                              name={copiedId === tpl.id ? 'check' : 'copy'}
+                              size={15}
+                              color="#11100E"
+                            />
+                          </span>
+                          <span>
+                            {copiedId === tpl.id
+                              ? 'Prompt Copiado!'
+                              : 'Copiar Prompt + Contexto'}
+                          </span>
+                        </SumiButton>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Resumo das Primitivas Procedurais Exportadas */}
+                  <div className="p-4 sm:p-5 rounded-xl bg-[#11100E] text-[#F2EDE2] space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800 pb-2.5">
+                      <span className="text-xs font-semibold text-[#F4EFE6]">
+                        Primitivas Procedurais Exportadas em @sumi-forge/react (Com Auto-Suggest na IDE)
+                      </span>
+                      <span className="text-xs font-tabular text-stone-400">
+                        TypeScript .d.ts + JSDoc
+                      </span>
+                    </div>
+                    <pre className="text-xs font-tabular overflow-x-auto leading-relaxed text-stone-200">
+                      <code>{`// Texturas, Curvas e Pincéis para Criar Novas Artes em Canvas 2D:
+import {
+  createSeededRandom,          // PRNG determinístico Mulberry32 (zero flicker)
+  fbmNoise2D,                  // Ruído Fractal 2D de 3 oitavas
+  sampleCubicCurve,            // Curva Bézier Cúbica com vetores normais (nx, ny)
+  sampleQuadraticCurve,        // Curva Bézier Quadrática com normais analíticas
+  samplePolarArc,              // Arco polar elíptico para golpes e círculos Zen Ensō
+  drawWashiPaperTexture,       // Fundo e fibras orgânicas de papel Washi / Seda
+  drawTarashikomiWashBlob,     // Mancha de aquarela úmida com borda mineral pigmentada
+  drawSumiKasureRibbon,        // Pincelada multi-cerdas de bambu com falhas Kasure
+  drawSakuraBlossom,           // Flor de cerejeira 5 pétalas chanfradas + estames
+  drawFloatingSakuraPetal,     // Pétala individual de Sakura ao vento
+  drawCalligraphicKoiCarp,     // Carpa Koi caligráfica animada
+  drawHokusaiWaveCrest,        // Crista de onda oriental Ukiyo-e
+  renderSansuiMountainRidge,   // Montanha Sansui completa (aguada + hachuras Cunfa + mata)
+  drawSansuiPineTree,          // Pinheiro imperial em nanquim
+  drawSansuiMountainPavilion,  // Pavilhão tradicional (Azumaya) nas escarpas
+  drawSansuiCraneFlock,        // Bando de garças caligráficas voando na neblina
+  drawSansuiSampanBoat,        // Barco solitário com pescador
+} from '@sumi-forge/react';`}</code>
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl bg-[#11100E] text-[#F2EDE2] p-4 sm:p-5 border border-[#D5CEC0]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-stone-800 text-xs">
+                    <span className="font-tabular text-stone-400">
+                      Arquivo público: /llms.txt ({SUMI_FORGE_LLMS_TXT.length} caracteres)
+                    </span>
+                    <SumiButton
+                      variant="washi"
+                      size="xs"
+                      seed={965}
+                      onClick={() => handleCopy(SUMI_FORGE_LLMS_TXT, 'llms-spec-copy')}
+                    >
+                      <SumiIcon
+                        name={copiedId === 'llms-spec-copy' ? 'check' : 'copy'}
+                        size={14}
+                        color="#11100E"
+                      />
+                      <span>
+                        {copiedId === 'llms-spec-copy' ? 'Copiado!' : 'Copiar Markdown'}
+                      </span>
+                    </SumiButton>
+                  </div>
+                  <pre className="text-xs font-tabular whitespace-pre-wrap leading-relaxed text-stone-200 max-h-[56vh] overflow-y-auto pr-2">
+                    <code>{SUMI_FORGE_LLMS_TXT}</code>
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         </div>

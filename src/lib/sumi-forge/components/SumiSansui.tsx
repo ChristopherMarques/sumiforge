@@ -48,7 +48,10 @@ export interface SumiSansuiProps {
   className?: string;
 }
 
-interface MountainRidgeSpec {
+/**
+ * Especificação paramétrica de uma cadeia de montanhas Sansui (山水) para composição procedural em Canvas 2D.
+ */
+export interface MountainRidgeSpec {
   /** Posição horizontal central (0.0 a 1.0 da largura) */
   centerX: number;
   /** Largura total da base (em fração da largura w) */
@@ -88,7 +91,7 @@ function isDarkHex(hex: string): boolean {
 /**
  * Resolve a paleta final combinando o tema escolhido, variáveis CSS (se 'auto') e cores customizadas
  */
-function resolveSansuiColors(
+export function resolveSansuiColors(
   theme: SansuiThemeId,
   customColors?: Partial<SansuiColors>,
   bgOverride?: string,
@@ -140,9 +143,38 @@ function resolveSansuiColors(
 }
 
 /**
+ * Preenche o canvas com a cor de papel Washi / Seda e desenha fibras orgânicas horizontais sutis.
+ */
+export function drawWashiPaperTexture(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  backgroundColor: string,
+  inkColor = '#1D1B18',
+  seed = 8472
+) {
+  const isDark = isDarkHex(backgroundColor);
+  ctx.save();
+  ctx.fillStyle = backgroundColor;
+  ctx.fillRect(0, 0, w, h);
+
+  const fiberRand = createSeededRandom(seed + 999);
+  ctx.strokeStyle = rgbaStr(inkColor, isDark ? 0.03 : 0.022);
+  ctx.lineWidth = 0.6;
+  for (let f = 0; f < 42; f++) {
+    const fy = fiberRand() * h;
+    ctx.beginPath();
+    ctx.moveTo(0, fy);
+    ctx.lineTo(w, fy + (fiberRand() - 0.5) * 4);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
  * Desenha um pinheiro oriental Sansui (松) com tronco caligráfico e patamares de agulhas horizontais
  */
-function drawSansuiPineTree(
+export function drawSansuiPineTree(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -212,7 +244,7 @@ function drawSansuiPineTree(
 /**
  * Desenha as árvores retorcidas de promontório com folhagem em gotas de tinta (Tenbyō / Dianfa)
  */
-function drawSansuiPromontoryTrees(
+export function drawSansuiPromontoryTrees(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -300,7 +332,7 @@ function drawSansuiPromontoryTrees(
 /**
  * Desenha um pavilhão tradicional de montanha (Azumaya / 亭) com beirais curvos entre os pinheiros
  */
-function drawSansuiMountainPavilion(
+export function drawSansuiMountainPavilion(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -359,7 +391,7 @@ function drawSansuiMountainPavilion(
 /**
  * Desenha um bando de garças / pássaros caligráficos voando entre as montanhas e a neblina
  */
-function drawSansuiCraneFlock(
+export function drawSansuiCraneFlock(
   ctx: CanvasRenderingContext2D,
   centerX: number,
   centerY: number,
@@ -398,7 +430,7 @@ function drawSansuiCraneFlock(
  * 3. Contorno caligráfico de largura variável na crista
  * 4. Vegetação (pinheiros, bosques densos, árvores de promontório, pavilhão e musgo Dian-tai)
  */
-function renderSansuiMountainRidge(
+export function renderSansuiMountainRidge(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
@@ -737,7 +769,7 @@ function renderSansuiMountainRidge(
 /**
  * Desenha o barco solitário (Sampan · 孤舟) com pescador de chapéu de bambu e vara
  */
-function drawSansuiSampanBoat(
+export function drawSansuiSampanBoat(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -802,7 +834,7 @@ function drawSansuiSampanBoat(
 /**
  * Gera a lista de cadeias montanhosas de acordo com a composição escolhida e a seed
  */
-function buildCompositionRidges(
+export function buildCompositionRidges(
   composition: SansuiComposition,
   seed: number,
   ridgeLayers: number

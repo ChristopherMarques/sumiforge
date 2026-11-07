@@ -1,0 +1,392 @@
+# @sumi-forge/react — Guia Oficial para Agentes de IA (llms.txt)
+
+> Biblioteca React & Motor Procedural em TypeScript para Pintura Japonesa Viva (Sumi-e, Suibokuga, Tarashikomi, Sansui / Shan-Shui e Ukiyo-e) em Canvas 2D a 60/120 FPS.
+
+- Pacote NPM: `@sumi-forge/react`
+- Documentação & Playground: https://sumiforge.vercel.app
+- Manifesto para Agentes: https://sumiforge.vercel.app/llms.txt
+- Licença: Apache-2.0
+
+---
+
+## 1. Instalação e Importação
+
+```bash
+npm install @sumi-forge/react
+# ou: pnpm add @sumi-forge/react | yarn add @sumi-forge/react
+```
+
+Todos os componentes, presets, tipos TypeScript e primitivas procedurais de pintura são exportados diretamente na raiz de `@sumi-forge/react`:
+
+```tsx
+import {
+  // Componentes React Principais
+  SumiMaskReveal,
+  SumiSansui,
+  SumiLandscape,
+  SumiBrushCanvas,
+  SumiSectionPainter,
+  SumiStroke,
+  SumiVFX,
+  SumiButton,
+  SumiIcon,
+  JapaneseCalligraphy,
+
+  // Catálogos e Presets Fortemente Tipados
+  MAGIC_SCHOOLS,
+  SANSUI_THEMES,
+  SANSUI_COMPOSITIONS,
+  DEFAULT_FUJI_LAYERS,
+  DEFAULT_VFX_CONFIG,
+  ARCHETYPE_CATALOG,
+  TECHNIQUE_CATALOG,
+
+  // Primitivas Procedurais de Baixo Nível (Para Criar Novas Artes em Canvas 2D)
+  createSeededRandom,
+  sampleNoise2D,
+  fbmNoise2D,
+  sampleCubicCurve,
+  sampleQuadraticCurve,
+  samplePolarArc,
+  samplesToSpine,
+  mixHex,
+  rgbaStr,
+  drawWashiPaperTexture,
+  drawSumiKasureRibbon,
+  drawTarashikomiWashBlob,
+  drawSakuraBlossom,
+  drawFloatingSakuraPetal,
+  drawHokusaiWaveCrest,
+  drawUkiyoeCloudBank,
+  drawUkiyoeCloudScrollVolute,
+  drawCalligraphicKoiCarp,
+  drawCornerSakuraBranch,
+  renderSansuiMountainRidge,
+  drawSansuiPineTree,
+  drawSansuiPromontoryTrees,
+  drawSansuiMountainPavilion,
+  drawSansuiCraneFlock,
+  drawSansuiSampanBoat,
+  resolveSansuiColors,
+} from '@sumi-forge/react';
+```
+
+---
+
+## 2. Catálogo de Componentes React (Uso Declarativo)
+
+### 2.1 `<SumiMaskReveal />` — Revelação de Imagens a Pincel e Toque
+Revela qualquer imagem (`src`) com pinceladas animadas Multi-Cerdas Kasure + aguada Tarashikomi, permitindo que o usuário também pinte/revele com o dedo no celular ou mouse.
+
+```tsx
+<div className="w-full h-[420px] rounded-2xl overflow-hidden">
+  <SumiMaskReveal
+    src="/minha-arte.jpg"
+    choreography="fuji_masterpiece" // 'fuji_masterpiece' | 'katana_slashes' | 'enso_spiral' | 'hokusai_tide' | 'interactive_brush'
+    duration={3.2}
+    bristleCount={26}
+    dryBrushGap={0.28}
+    seed={8472}
+    showLiveInkAccents={true}
+    interactiveBrush={true}
+    showTouchControls={true}
+  />
+</div>
+```
+
+### 2.2 `<SumiSansui />` — Paisagens Orientais Gerativas (Shan-Shui / Sansui 山水)
+Gera paisagens de montanhas, neblina, rios, florestas densas de pinheiros, pavilhão oriental (*Azumaya*), grous e barco solitário controladas deterministicamente por `seed`. Suporta auto-pintura progressiva ao entrar na tela (`autoPaint`, `paintOnView`) ou renderização estática imediata (`autoPaint={false}`).
+
+```tsx
+const sansuiRef = useRef<{ exportPng: (filename?: string) => void; replayPaint?: () => void } | null>(null);
+
+<div className="w-full h-[400px] rounded-2xl overflow-hidden">
+  <SumiSansui
+    composition="dense_pine_sanctuary" // 'panoramic_river' | 'karst_peaks' | 'layered_valley' | 'twin_gorges' | 'dense_pine_sanctuary'
+    seed={8472}
+    theme="jade_mineral" // 'classic_washi' | 'jade_mineral' | 'night_obsidian' | 'crimson_dawn' | 'cobalt_porcelain' | 'auto'
+    ridgeLayers={6}
+    treeDensity={1.45}
+    mistDensity={1.0}
+    showBoat={true}
+    autoPaint={true}
+    paintOnView={true}
+    paintDuration={2.2}
+    animated={true}
+    actionsRef={sansuiRef}
+  />
+</div>
+```
+
+### 2.3 `<SumiLandscape />` — Obra Procedural Viva do Monte Fuji & Sakura
+Renderiza a cerimônia em 3 atos (Sol Carmesim em mancha de aquarela -> traços caligráficos do Monte Fuji e galhos -> florada de Sakura e pétalas ao vento).
+
+```tsx
+<div className="w-full h-[520px]">
+  <SumiLandscape
+    seed={8472}
+    windSpeed={1.0}
+    animated={true}
+    interactive={true}
+    layers={{
+      sunIntensity: 1.0,
+      mountainIntensity: 1.0,
+      sakuraBranchIntensity: 1.0,
+      sakuraPetalsIntensity: 1.0,
+      waterReflectionIntensity: 1.0,
+      mistKumoIntensity: 1.0,
+    }}
+  />
+</div>
+```
+
+### 2.4 `<SumiBrushCanvas />` — Atelier Interativo com Sensibilidade a Pressão e Velocidade
+Tela de pintura multi-camadas (`'background' | 'midground' | 'foreground'`) com 7 pincéis orientais (`'sumi_kasure' | 'sakura_branch' | 'hokusai_wave' | 'suibokuga_flame' | 'kumo_cloud' | 'tarashikomi_wash' | 'rough_crystal'`).
+
+### 2.5 `<SumiSectionPainter />` — Fundos de Seção Sincronizados com Scroll
+Pinta cenários completos de fundo (`theme="sakura_katana_canopy" | "koi_river_rapids" | "misty_mountains_sakura" | "enso_imperial_seal" | "header_single_stroke"`).
+
+### 2.6 `<SumiButton />`, `<SumiIcon />`, `<SumiStroke />` e `<JapaneseCalligraphy />`
+- `<SumiButton variant="crimson" | "ink" | "washi" | "outline" | "ghost" size="xs" | "sm" | "md" | "lg" />`: Botão retangular desenhado com `rough.js`.
+- `<SumiIcon name="brush" | "katana" | "sakura" | "koi" | "mountain" | "scroll" | "fullscreen" | "minimize" | "download" | "replay" | ... />`: Ícones caligráficos desenhados com `rough.js`.
+- `<JapaneseCalligraphy jp="山水画" romaji="Sansuiga" pt="Pintura tradicional de montanhas e águas" variant="hanko" | "inline" | "tategaki" />`: Exibe tooltip em Português ao passar o mouse ou tocar no mobile.
+
+---
+
+## 3. Como Criar Novas Artes Procedurais com as Primitivas do Motor
+
+Quando o usuário pedir para criar uma **nova pintura procedural customizada** (por exemplo: um bambuzal ao vento, um templo sob a lua vermelha, um lago de carpas Koi visto de cima, um dragão de nanquim, ou um card decorado com galhos de Sakura e pinceladas Kasure), construa um componente React com `<canvas>` combinando as primitivas exportadas abaixo:
+
+### 3.1 Receita Base de Canvas de Alta Nitidez (HiDPI + Cache Offscreen)
+Sempre limite `dpr = Math.min(2, window.devicePixelRatio || 1)` e pause animações fora da tela com `IntersectionObserver`.
+
+### 3.2 Primitivas Disponíveis para Composição Livre
+
+1. **Fundo e Textura de Papel Washi**:
+   ```ts
+   drawWashiPaperTexture(ctx, width, height, '#F4EFE6', '#141413', seed);
+   ```
+
+2. **Mancha de Aquarela Úmida (*Tarashikomi* — Sol, Lua, Neblina Colorida, Sombras)**:
+   ```ts
+   drawTarashikomiWashBlob(
+     ctx,
+     centerX,
+     centerY,
+     radiusX,
+     radiusY,
+     rotationRad,
+     '#FFF5F5', // cor central luminosa
+     '#C8232C', // cor de borda mineral pigmentada
+     0.85,      // opacidade alpha
+     seed
+   );
+   ```
+
+3. **Curvas Espinhais com Normais Analíticas + Fita Caligráfica Multi-Cerdas (*Kasure*)**:
+   Para desenhar troncos, golpes de espada, círculos Zen Ensō, hastes de bambu ou caligrafia:
+   ```ts
+   // 1. Gere a espinha dorsal (Curva Cúbica, Quadrática ou Arco Polar)
+   const spine = sampleCubicCurve(
+     { x: 40, y: 320 },
+     { x: 180, y: 120 },
+     { x: 360, y: 260 },
+     { x: 540, y: 80 },
+     96,   // passos de amostragem
+     0.15, // tremor orgânico (jitter)
+     seed
+   );
+
+   // 2. Renderize o golpe de pincel de bambu com cerdas e falhas de tinta seca (Kasure)
+   drawSumiKasureRibbon(ctx, {
+     spine,
+     maxWidth: 22,
+     bristleCount: 28,
+     dryBrushGap: 0.32,
+     taperStart: 0.25,
+     taperEnd: 0.85,
+     color: '#141413',
+     alpha: 0.95,
+     headReach: progress, // 0.0 -> 1.0 para animar a pincelada nascendo!
+     tailRetract: 0,
+     seed,
+   });
+   ```
+
+4. **Flores de Cerejeira (*Sakura*), Pétalas ao Vento, Carpas Koi, Ondas e Nuvens**:
+   ```ts
+   // Flor completa de 5 pétalas chanfradas + estames dourados/carmesim
+   drawSakuraBlossom(ctx, x, y, radius, rotationRad, '#C8232C', '#FFF5F5', '#141413', alpha, seed);
+
+   // Pétala individual flutuando na brisa
+   drawFloatingSakuraPetal(ctx, x, y, length, width, angleRad, '#C8232C', '#FFF5F5', alpha);
+
+   // Carpa Koi caligráfica vista de cima
+   drawCalligraphicKoiCarp(ctx, x, y, length, angleRad, '#C8232C', '#141413', swimPhase, alpha, seed);
+
+   // Cristas de onda Ukiyo-e (Hokusai) e Nuvens Kumo
+   drawHokusaiWaveCrest(ctx, x, y, size, angleRad, '#141413', '#F4EFE6', alpha, seed);
+   drawUkiyoeCloudBank(ctx, x, y, width, height, '#EDE6D6', '#141413', alpha, seed);
+   ```
+
+5. **Montanhas *Sansui* com Hachuras *Cunfa*, Pinheiros, Pavilhão e Barco**:
+   ```ts
+   const { resolved: palette, isDark } = resolveSansuiColors('jade_mineral');
+
+   renderSansuiMountainRidge(
+     ctx,
+     width,
+     height,
+     scale,
+     {
+       centerX: 0.65,
+       spanW: 0.55,
+       peakY: 0.22,
+       baseY: 0.85,
+       sharpness: 1.35,
+       skew: -0.12,
+       depth: 0.82,
+       cunfaDensity: 1.15,
+       treeStyle: 'dense_forest', // 'pines' | 'foliage' | 'dense_forest' | 'distant_dots' | 'none'
+       hasPavilion: true,
+       seed: seed + 101,
+     },
+     palette,
+     isDark,
+     1.4, // treeDensity
+     1.0, // mistDensity
+     paintProgress // 0.0 a 1.0 (anima aguada -> hachuras -> árvores!)
+   );
+
+   // Elementos individuais caso queira posicionar manualmente:
+   drawSansuiPineTree(ctx, x, y, heightPx, scale, palette.ink, palette.wash, 0.95, seed);
+   drawSansuiMountainPavilion(ctx, x, y, sizePx, palette.ink, palette.wash, 0.95);
+   drawSansuiCraneFlock(ctx, x, y, scale, palette.ink, 0.8, seed);
+   drawSansuiSampanBoat(ctx, x, y, sizePx, palette.ink, 0.92);
+   ```
+
+---
+
+## 4. Exemplo Completo: Criando um Novo Componente Procedural do Zero
+
+Abaixo está um template completo para um Agente de IA criar uma arte original (ex.: **"Santuário do Luar Carmesim & Bambuzal Sumi-e"**) usando apenas as primitivas de `@sumi-forge/react`:
+
+```tsx
+import React, { useEffect, useRef } from 'react';
+import {
+  createSeededRandom,
+  drawWashiPaperTexture,
+  drawTarashikomiWashBlob,
+  sampleQuadraticCurve,
+  drawSumiKasureRibbon,
+  drawSakuraBlossom,
+  drawSansuiCraneFlock,
+  drawSansuiSampanBoat,
+  renderSansuiMountainRidge,
+  resolveSansuiColors,
+} from '@sumi-forge/react';
+
+export function CustomMoonlightSanctuary({ seed = 4096 }: { seed?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(320, Math.floor(rect.width));
+    const h = Math.max(220, Math.floor(rect.height));
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    const scale = Math.min(w / 900, h / 460);
+    const { resolved: palette, isDark } = resolveSansuiColors('classic_washi');
+    const rand = createSeededRandom(seed);
+
+    // 1. Papel Washi artesanal
+    drawWashiPaperTexture(ctx, w, h, palette.background, palette.ink, seed);
+
+    // 2. Lua Carmesim em mancha de aquarela Tarashikomi
+    drawTarashikomiWashBlob(ctx, w * 0.74, h * 0.28, 68 * scale, 66 * scale, 0, '#FFF5F5', '#C8232C', 0.85, seed + 7);
+
+    // 3. Montanha com Pavilhão e Floresta Densa
+    renderSansuiMountainRidge(
+      ctx,
+      w,
+      h,
+      scale,
+      {
+        centerX: 0.68,
+        spanW: 0.58,
+        peakY: 0.24,
+        baseY: 0.86,
+        sharpness: 1.28,
+        depth: 0.85,
+        cunfaDensity: 1.2,
+        treeStyle: 'dense_forest',
+        hasPavilion: true,
+        seed: seed + 33,
+      },
+      palette,
+      isDark,
+      1.5,
+      1.0,
+      1.0
+    );
+
+    // 4. Galho caligráfico em primeiro plano com flores de Sakura
+    const branchSpine = sampleQuadraticCurve(
+      { x: 0, y: h * 0.22 },
+      { x: w * 0.24, y: h * 0.34 },
+      { x: w * 0.46, y: h * 0.18 },
+      72,
+      0.18,
+      seed + 55
+    );
+    drawSumiKasureRibbon(ctx, {
+      spine: branchSpine,
+      maxWidth: 16 * scale,
+      bristleCount: 24,
+      dryBrushGap: 0.28,
+      taperStart: 0.1,
+      taperEnd: 0.9,
+      color: palette.ink,
+      seed: seed + 55,
+    });
+
+    for (let i = 12; i < branchSpine.length; i += 14) {
+      const pt = branchSpine[i];
+      drawSakuraBlossom(
+        ctx,
+        pt.x + (rand() - 0.5) * 12,
+        pt.y + (rand() - 0.5) * 12,
+        (9 + rand() * 5) * scale,
+        rand() * Math.PI * 2,
+        '#C8232C',
+        '#FFF5F5',
+        palette.ink,
+        0.92,
+        seed + i
+      );
+    }
+
+    // 5. Garças e Barco Solitário
+    drawSansuiCraneFlock(ctx, w * 0.52, h * 0.22, scale, palette.ink, 0.8, seed + 99);
+    drawSansuiSampanBoat(ctx, w * 0.34, h * 0.89, 14 * scale, palette.ink, 0.92);
+  }, [seed]);
+
+  return <canvas ref={canvasRef} className="w-full h-full block" />;
+}
+```
+
+---
+
+## 5. Regras de Ouro para Agentes de IA
+1. **Zero Dependência de Ícones Externos**: Se precisar de ícones ou botões na interface, use sempre `<SumiButton />` e `<SumiIcon />` de `@sumi-forge/react`.
+2. **Termos em Japonês Acessíveis**: Sempre envolva ideogramas japoneses em `<JapaneseCalligraphy jp="..." romaji="..." pt="..." />` para oferecer tradução ao passar o mouse ou tocar no mobile.
+3. **Determinismo por Seed**: Nunca use `Math.random()` dentro de loops de renderização de frames; use sempre `createSeededRandom(seed)` para evitar cintilação (*flicker*).
+4. **Fluidez 60/120 FPS**: Em componentes animados, armazene a camada estática (papel Washi + montanhas/troncos já pintados) em um `HTMLCanvasElement` offscreen e desenhe apenas os elementos em movimento (pétalas, barco, ondas) por frame.
