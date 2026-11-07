@@ -123,16 +123,22 @@ export const PlaygroundView: React.FC<PlaygroundViewProps> = ({
   const [sansuiComposition, setSansuiComposition] = useState<SansuiComposition>('panoramic_river');
   const [sansuiTheme, setSansuiTheme] = useState<SansuiThemeId>('classic_washi');
   const [sansuiSeed, setSansuiSeed] = useState<number>(8472);
-  const [sansuiLayers, setSansuiLayers] = useState<number>(5);
-  const [sansuiTreeDensity, setSansuiTreeDensity] = useState<number>(1.0);
+  const [sansuiLayers, setSansuiLayers] = useState<number>(6);
+  const [sansuiTreeDensity, setSansuiTreeDensity] = useState<number>(1.35);
   const [sansuiMistDensity, setSansuiMistDensity] = useState<number>(1.0);
   const [sansuiShowBoat, setSansuiShowBoat] = useState<boolean>(true);
   const [sansuiAnimated, setSansuiAnimated] = useState<boolean>(true);
+  const [sansuiAutoPaint, setSansuiAutoPaint] = useState<boolean>(true);
+  const [sansuiReplayTrigger, setSansuiReplayTrigger] = useState<number>(1);
+  const [sansuiFullscreen, setSansuiFullscreen] = useState<boolean>(false);
   const [sansuiUseCustomColors, setSansuiUseCustomColors] = useState<boolean>(false);
   const [sansuiCustomBg, setSansuiCustomBg] = useState<string>('#EDE6D6');
   const [sansuiCustomInk, setSansuiCustomInk] = useState<string>('#1D1B18');
   const [sansuiCustomWash, setSansuiCustomWash] = useState<string>('#6E8276');
-  const sansuiActionsRef = useRef<{ exportPng: (filename?: string) => void } | null>(null);
+  const sansuiActionsRef = useRef<{
+    exportPng: (filename?: string) => void;
+    replayPaint?: () => void;
+  } | null>(null);
 
   const handleCopy = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -304,6 +310,7 @@ export function GenerativeSansuiArtwork() {
       mistDensity={${sansuiMistDensity}}
       showBoat={${sansuiShowBoat}}
       animated={${sansuiAnimated}}
+      autoPaint={${sansuiAutoPaint}}
     />
   );
 }`;
@@ -1534,9 +1541,20 @@ export function GenerativeSansuiArtwork() {
 
             {/* Tema Atmosférico & Modo Noturno */}
             <div className="space-y-2 pt-2 border-t border-[#D5CEC0]">
-              <label className="block text-xs font-medium text-[#11100E]">
-                Tema de Pintura &amp; Modo Noturno
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="block text-xs font-medium text-[#11100E]">
+                  Tema de Pintura &amp; Modo Noturno
+                </label>
+                {sansuiTheme !== 'auto' && SANSUI_THEMES[sansuiTheme] && (
+                  <JapaneseCalligraphy
+                    jp={SANSUI_THEMES[sansuiTheme].jp}
+                    romaji={SANSUI_THEMES[sansuiTheme].romaji}
+                    pt={SANSUI_THEMES[sansuiTheme].subtitle}
+                    variant="hanko"
+                    tooltipPlacement="left"
+                  />
+                )}
+              </div>
               <select
                 value={sansuiTheme}
                 onChange={(e) => {
@@ -1547,9 +1565,10 @@ export function GenerativeSansuiArtwork() {
               >
                 {Object.values(SANSUI_THEMES).map((th) => (
                   <option key={th.id} value={th.id}>
-                    {th.name} ({th.jp}) — {th.subtitle}
+                    {th.name} · {th.subtitle}
                   </option>
                 ))}
+                <option value="auto">Automático (Variáveis CSS / Tema do Sistema)</option>
               </select>
 
               {/* Customização Livre de Cores */}
@@ -1657,7 +1676,20 @@ export function GenerativeSansuiArtwork() {
                 />
               </label>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#D5CEC0]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#D5CEC0]">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sansuiAutoPaint}
+                    onChange={(e) => {
+                      setSansuiAutoPaint(e.target.checked);
+                      if (e.target.checked) setSansuiReplayTrigger((t) => t + 1);
+                    }}
+                    className="accent-[#C8232C]"
+                  />
+                  <span>Auto-Pintar ao Montar</span>
+                </label>
+
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1668,7 +1700,7 @@ export function GenerativeSansuiArtwork() {
                   <span>Barco Solitário</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer sm:col-span-2">
                   <input
                     type="checkbox"
                     checked={sansuiAnimated}
@@ -1680,7 +1712,31 @@ export function GenerativeSansuiArtwork() {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-[#D5CEC0]">
+            <div className="pt-2 border-t border-[#D5CEC0] flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <SumiButton
+                  variant="washi"
+                  size="sm"
+                  seed={543}
+                  onClick={() => {
+                    setSansuiAutoPaint(true);
+                    setSansuiReplayTrigger((t) => t + 1);
+                  }}
+                >
+                  <SumiIcon name="brush" size={15} color="#11100E" />
+                  <span>Repintar</span>
+                </SumiButton>
+                <SumiButton
+                  variant="washi"
+                  size="sm"
+                  seed={544}
+                  onClick={() => setSansuiFullscreen(true)}
+                >
+                  <SumiIcon name="fullscreen" size={15} color="#11100E" />
+                  <span>Tela Cheia</span>
+                </SumiButton>
+              </div>
+
               <SumiButton
                 variant="ink"
                 size="sm"
@@ -1711,25 +1767,62 @@ export function GenerativeSansuiArtwork() {
                 mistDensity={sansuiMistDensity}
                 showBoat={sansuiShowBoat}
                 animated={sansuiAnimated}
+                autoPaint={sansuiAutoPaint}
+                paintOnView={false}
+                replayTrigger={sansuiReplayTrigger}
                 actionsRef={sansuiActionsRef}
               />
 
-              {/* Selo e controles rápidos sobre a pintura */}
+              {/* Selo com Tradução Interativa e controles rápidos sobre a pintura */}
               <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-                <div className="pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F7F3EB]/85 backdrop-blur-md border border-[#D5CEC0] text-xs text-[#11100E]">
-                  <span className="font-semibold">
-                    {SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition)?.jp}
-                  </span>
-                  <span>·</span>
-                  <span>{SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition)?.name}</span>
-                  <span className="font-tabular text-[#C8232C] font-semibold">#{sansuiSeed}</span>
+                <div className="pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F7F3EB]/90 backdrop-blur-md border border-[#D5CEC0] text-xs text-[#11100E]">
+                  {(() => {
+                    const compMeta =
+                      SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition) ??
+                      SANSUI_COMPOSITIONS[0];
+                    return (
+                      <>
+                        <JapaneseCalligraphy
+                          jp={compMeta.jp}
+                          romaji={compMeta.romaji}
+                          pt={compMeta.ptMeaning}
+                          variant="hanko"
+                          tooltipPlacement="bottom"
+                        />
+                        <span className="font-medium">{compMeta.name}</span>
+                        <span className="font-tabular text-[#C8232C] font-semibold">
+                          #{sansuiSeed}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
 
-                <div className="pointer-events-auto flex items-center gap-2">
+                <div className="pointer-events-auto flex items-center gap-1.5">
+                  <SumiButton
+                    variant="washi"
+                    size="xs"
+                    seed={559}
+                    onClick={() => sansuiActionsRef.current?.exportPng()}
+                    title="Baixar PNG"
+                  >
+                    <SumiIcon name="download" size={14} color="#11100E" />
+                    <span>PNG</span>
+                  </SumiButton>
                   <SumiButton
                     variant="washi"
                     size="xs"
                     seed={560}
+                    onClick={() => setSansuiFullscreen(true)}
+                    title="Expandir em Tela Cheia"
+                  >
+                    <SumiIcon name="fullscreen" size={14} color="#11100E" />
+                    <span>Tela Cheia</span>
+                  </SumiButton>
+                  <SumiButton
+                    variant="washi"
+                    size="xs"
+                    seed={561}
                     onClick={() => setSansuiSeed(Math.floor(1000 + Math.random() * 90000))}
                   >
                     <SumiIcon name="replay" size={14} color="#11100E" />
@@ -1739,33 +1832,44 @@ export function GenerativeSansuiArtwork() {
               </div>
             </div>
 
-            {/* Galeria Rápida de Exemplos Clicáveis (Inspirados nas 4 Estéticas) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {/* Galeria Rápida de Exemplos Clicáveis (5 Composições Clássicas + Densas) */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {(
                 [
+                  {
+                    label: 'Bosque Denso & Pavilhão',
+                    comp: 'dense_pine_sanctuary' as const,
+                    theme: 'classic_washi' as const,
+                    seed: 6824,
+                    trees: 1.75,
+                  },
                   {
                     label: 'Horizonte Fluvial',
                     comp: 'panoramic_river' as const,
                     theme: 'classic_washi' as const,
                     seed: 8472,
+                    trees: 1.45,
                   },
                   {
                     label: 'Picos Escarpados',
                     comp: 'karst_peaks' as const,
                     theme: 'classic_washi' as const,
                     seed: 31904,
+                    trees: 1.45,
                   },
                   {
                     label: 'Vale Mineral Jade',
                     comp: 'layered_valley' as const,
                     theme: 'jade_mineral' as const,
                     seed: 52180,
+                    trees: 1.55,
                   },
                   {
                     label: 'Obsidiana Noturna',
                     comp: 'twin_gorges' as const,
                     theme: 'night_obsidian' as const,
                     seed: 77412,
+                    trees: 1.45,
                   },
                 ] as const
               ).map((preset, idx) => (
@@ -1784,11 +1888,12 @@ export function GenerativeSansuiArtwork() {
                     setSansuiComposition(preset.comp);
                     setSansuiTheme(preset.theme);
                     setSansuiSeed(preset.seed);
+                    setSansuiTreeDensity(preset.trees);
                     setSansuiUseCustomColors(false);
                   }}
                   className="w-full"
                 >
-                  <span>{preset.label}</span>
+                  <span className="truncate">{preset.label}</span>
                 </SumiButton>
               ))}
             </div>
@@ -1816,6 +1921,106 @@ export function GenerativeSansuiArtwork() {
               <pre className="text-xs font-tabular overflow-x-auto leading-relaxed">
                 <code>{generatedJSX}</code>
               </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal em Tela Cheia para o Playground Sansui */}
+      {sansuiFullscreen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] bg-[#11100E]/92 backdrop-blur-md flex flex-col justify-between p-3 sm:p-5"
+        >
+          <div className="relative flex-1 w-full rounded-2xl overflow-hidden border border-[#D5CEC0]/40 shadow-2xl">
+            <SumiSansui
+              composition={sansuiComposition}
+              seed={sansuiSeed}
+              theme={sansuiTheme}
+              backgroundColor={sansuiUseCustomColors ? sansuiCustomBg : undefined}
+              inkColor={sansuiUseCustomColors ? sansuiCustomInk : undefined}
+              washColor={sansuiUseCustomColors ? sansuiCustomWash : undefined}
+              ridgeLayers={sansuiLayers}
+              treeDensity={sansuiTreeDensity}
+              mistDensity={sansuiMistDensity}
+              showBoat={sansuiShowBoat}
+              animated={sansuiAnimated}
+              autoPaint={sansuiAutoPaint}
+              paintOnView={false}
+              replayTrigger={sansuiReplayTrigger}
+              actionsRef={sansuiActionsRef}
+            />
+
+            <div className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex flex-wrap items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[#F8F4EC]/92 backdrop-blur-xl border border-[#D5CEC0] text-xs text-[#11100E]">
+                {(() => {
+                  const compMeta =
+                    SANSUI_COMPOSITIONS.find((c) => c.id === sansuiComposition) ??
+                    SANSUI_COMPOSITIONS[0];
+                  return (
+                    <>
+                      <JapaneseCalligraphy
+                        jp={compMeta.jp}
+                        romaji={compMeta.romaji}
+                        pt={compMeta.ptMeaning}
+                        variant="hanko"
+                        tooltipPlacement="bottom"
+                      />
+                      <span className="font-semibold">{compMeta.name}</span>
+                      <span className="font-tabular text-[#C8232C] font-semibold">
+                        #{sansuiSeed}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <SumiButton
+                  variant="washi"
+                  size="sm"
+                  seed={901}
+                  onClick={() => {
+                    setSansuiAutoPaint(true);
+                    setSansuiReplayTrigger((t) => t + 1);
+                  }}
+                >
+                  <SumiIcon name="brush" size={16} color="#11100E" />
+                  <span>Repintar</span>
+                </SumiButton>
+                <SumiButton
+                  variant="crimson"
+                  size="sm"
+                  seed={902}
+                  onClick={() => setSansuiSeed(Math.floor(1000 + Math.random() * 90000))}
+                >
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon name="replay" size={15} color="#11100E" />
+                  </span>
+                  <span>Nova Seed</span>
+                </SumiButton>
+                <SumiButton
+                  variant="ink"
+                  size="sm"
+                  seed={903}
+                  onClick={() => sansuiActionsRef.current?.exportPng()}
+                >
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon name="download" size={15} color="#11100E" />
+                  </span>
+                  <span>Baixar PNG</span>
+                </SumiButton>
+                <SumiButton
+                  variant="washi"
+                  size="sm"
+                  seed={904}
+                  onClick={() => setSansuiFullscreen(false)}
+                >
+                  <SumiIcon name="minimize" size={16} color="#11100E" />
+                  <span>Fechar</span>
+                </SumiButton>
+              </div>
             </div>
           </div>
         </div>

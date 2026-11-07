@@ -1,6 +1,6 @@
 {
-  "summary":  "Plano de implementação para o novo motor procedural de paisagens Sansui / Shan-Shui (<SumiSansui />) no @sumi-forge/react, com 4 composições clássicas geradas por seed, suporte a temas prontos, Modo Noturno e cores livres (props ou CSS variables), além de nova seção interativa na Landing Page e nova bancada no Playground Studio.",
-  "updatedAt":  "2026-11-07T19:18:18.086675345Z",
+  "summary":  "Implementation plan for wrapping all Japanese terms in <JapaneseCalligraphy /> with Portuguese tooltips, adding scroll-triggered/mount auto-painting vs fixed rendering to <SumiSansui />, adding denser forest/pavilion Sansui compositions, PNG export on all cards, and a full-screen modal viewer with a Rough.js fullscreen icon.",
+  "updatedAt":  "2026-11-07T19:43:59.162043521Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

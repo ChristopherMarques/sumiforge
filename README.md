@@ -99,7 +99,7 @@ export function ProductHeroArtwork() {
 
 ### 2. `<SumiSansui />` · Paisagens Gerativas *Sansui* por Seed & Tema
 
-Gera pinturas orientais de montanhas e águas (*Shan-Shui* / *Sansui* 山水) 100% procedurais e determinísticas por `seed`, com cristas caligráficas variáveis, hachuras internas de rocha (*Cunfa* 皴法), neblina na base das montanhas, pinheiros em nanquim e barco solitário. Adapta-se a temas prontos, **Modo Noturno** (`night_obsidian`), **Cores Personalizadas** ou **Variáveis CSS** do seu projeto (`theme="auto"`).
+Gera pinturas orientais de montanhas e águas (*Shan-Shui* / *Sansui* 山水) 100% procedurais e determinísticas por `seed`, com cristas caligráficas variáveis, hachuras internas de rocha (*Cunfa* 皴法), neblina na base das montanhas, florestas densas de pinheiros em nanquim, pavilhão tradicional (*Azumaya*) nas escarpas, bandos de grous e barco solitário. Suporta **Auto-Pintura progressiva** ao entrar na tela (`autoPaint`, `paintOnView`) ou renderização estática imediata (`autoPaint={false}`), além de adaptar-se a temas prontos, **Modo Noturno** (`night_obsidian`), **Cores Personalizadas** ou **Variáveis CSS** do seu projeto (`theme="auto"`).
 
 ```tsx
 import { SumiSansui } from '@sumi-forge/react';
@@ -108,13 +108,16 @@ export function GenerativeSansuiBanner() {
   return (
     <div className="w-full h-[380px] rounded-2xl overflow-hidden">
       <SumiSansui
-        composition="panoramic_river" // 'panoramic_river' | 'karst_peaks' | 'layered_valley' | 'twin_gorges'
+        composition="dense_pine_sanctuary" // 'panoramic_river' | 'karst_peaks' | 'layered_valley' | 'twin_gorges' | 'dense_pine_sanctuary'
         seed={8472}
         theme="jade_mineral" // 'classic_washi' | 'jade_mineral' | 'night_obsidian' | 'crimson_dawn' | 'cobalt_porcelain' | 'auto'
         ridgeLayers={5}
-        treeDensity={1.0}
+        treeDensity={1.45}
         mistDensity={1.0}
         showBoat={true}
+        autoPaint={true}
+        paintOnView={true}
+        paintDuration={2.5}
         animated={true}
       />
     </div>
@@ -124,15 +127,19 @@ export function GenerativeSansuiBanner() {
 
 | Propriedade | Tipo | Padrão | Descrição |
 | :--- | :--- | :--- | :--- |
-| `composition` | `SansuiComposition` | `'panoramic_river'` | Composição estrutural (`'panoramic_river'`, `'karst_peaks'`, `'layered_valley'`, `'twin_gorges'`). |
+| `composition` | `SansuiComposition` | `'panoramic_river'` | Composição estrutural (`'panoramic_river'`, `'karst_peaks'`, `'layered_valley'`, `'twin_gorges'`, `'dense_pine_sanctuary'`). |
 | `seed` | `number` | `8472` | Semente numérica determinística: a mesma seed recria exatamente a mesma cordilheira e vegetação. |
 | `theme` | `SansuiThemeId` | `'classic_washi'` | Paleta pronta (`'classic_washi'`, `'jade_mineral'`, `'night_obsidian'`, `'crimson_dawn'`, `'cobalt_porcelain'`) ou `'auto'` (lê `--sumi-bg`, `--sumi-ink`, `--sumi-wash` e `.dark`). |
+| `autoPaint` | `boolean` | `true` | Quando `true`, pinta a paisagem progressivamente (aguada mineral → cristas e hachuras *Cunfa* → florestas, pavilhão e barco). Quando `false`, exibe a pintura pronta imediatamente. |
+| `paintOnView` | `boolean` | `true` | Aguarda o componente entrar na tela (`IntersectionObserver`) para iniciar a cerimônia de auto-pintura. |
+| `paintDuration` | `number` | `2.4` | Duração da cerimônia de auto-pintura em segundos. |
 | `backgroundColor` | `string` | `undefined` | Sobrescreve livremente a cor de fundo do pergaminho. |
 | `inkColor` | `string` | `undefined` | Sobrescreve livremente a cor dos traços de contorno, hachuras e árvores. |
 | `washColor` | `string` | `undefined` | Sobrescreve livremente a cor da aguada mineral interna das montanhas. |
 | `ridgeLayers` | `number` | `5` | Quantidade de planos atmosféricos de montanhas (2 a 8). |
 | `treeDensity` | `number` | `1.0` | Densidade de pinheiros e árvores caligráficas nas encostas (0.0 a 2.0). |
 | `showBoat` | `boolean` | `true` | Exibe a embarcação solitária deslizando nas águas calmas. |
+| `actionsRef` | `RefObject` | `undefined` | Expõe `exportPng()`, `randomizeSeed()` e `replayPaint()` para controle imperativo. |
 
 ---
 

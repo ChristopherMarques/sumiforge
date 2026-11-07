@@ -20,17 +20,29 @@ export interface SumiSansuiProps {
   washColor?: string;
   /** Quantidade de planos de montanhas (3 a 8) */
   ridgeLayers?: number;
-  /** Densidade de pinheiros e árvores nas encostas (0.0 a 2.0) */
+  /** Densidade de pinheiros e árvores nas encostas (0.0 a 2.5) */
   treeDensity?: number;
-  /** Intensidade da neblina entre os vales (0.0 a 1.5) */
+  /** Intensidade da neblina entre os vales (0.0 a 1.8) */
   mistDensity?: number;
   /** Exibe o pescador solitário em seu barco (sampan) */
   showBoat?: boolean;
   /** Ativa o movimento sutil da água, da neblina e do barco */
   animated?: boolean;
-  /** Referência opcional para exportar a pintura gerada em PNG de alta definição */
+  /**
+   * Quando true (padrão), a paisagem é auto-pintada progressivamente (aguada -> traços -> florestas).
+   * Quando false, renderiza a pintura pronta e fixa instantaneamente.
+   */
+  autoPaint?: boolean;
+  /** Quando true (padrão), inicia a auto-pintura apenas quando o componente entra na área visível da tela */
+  paintOnView?: boolean;
+  /** Duração da cerimônia de auto-pintura em segundos (padrão: 2.2s) */
+  paintDuration?: number;
+  /** Contador opcional para disparar novamente a animação de pintura ao mudar de valor */
+  replayTrigger?: number;
+  /** Referência opcional para exportar a pintura gerada em PNG ou repintar sob demanda */
   actionsRef?: React.MutableRefObject<{
     exportPng: (filename?: string) => void;
+    replayPaint?: () => void;
   } | null>;
   /** Classe CSS adicional */
   className?: string;
@@ -55,8 +67,10 @@ interface MountainRidgeSpec {
   depth: number;
   /** Densidade de hachuras Cunfa (皴法) de textura de rocha */
   cunfaDensity: number;
-  /** Estilo de árvores nesta cadeia ('pines' | 'foliage' | 'distant_dots' | 'none') */
-  treeStyle: 'pines' | 'foliage' | 'distant_dots' | 'none';
+  /** Estilo de árvores nesta cadeia ('pines' | 'foliage' | 'dense_forest' | 'distant_dots' | 'none') */
+  treeStyle: 'pines' | 'foliage' | 'dense_forest' | 'distant_dots' | 'none';
+  /** Se verdadeiro, desenha um pavilhão oriental (Azumaya) no ombro da montanha */
+  hasPavilion?: boolean;
   /** Semente local da montanha */
   seed: number;
 }
@@ -115,7 +129,8 @@ function resolveSansuiColors(
   const background = bgOverride || customColors?.background || basePreset.colors.background;
   const ink = inkOverride || customColors?.ink || basePreset.colors.ink;
   const wash = washOverride || customColors?.wash || basePreset.colors.wash;
-  const mist = customColors?.mist || bgOverride || customColors?.background || basePreset.colors.mist;
+  const mist =
+    customColors?.mist || bgOverride || customColors?.background || basePreset.colors.mist;
   const accent = customColors?.accent || basePreset.colors.accent;
 
   return {
@@ -138,8 +153,9 @@ function drawSansuiPineTree(
   alpha: number,
   seed: number
 ) {
+  if (alpha <= 0.02 || height <= 1) return;
   const rand = createSeededRandom(seed);
-  const lean = (rand() - 0.5) * height * 0.24;
+  const lean = (rand() - 0.5) * height * 0.26;
   const topX = x + lean;
   const topY = y - height;
 
@@ -148,39 +164,45 @@ function drawSansuiPineTree(
   ctx.beginPath();
   ctx.moveTo(x, y + 2 * scale);
   ctx.quadraticCurveTo(x + lean * 0.35, y - height * 0.52, topX, topY);
-  ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.92);
-  ctx.lineWidth = Math.max(0.8, height * 0.068);
+  ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.94);
+  ctx.lineWidth = Math.max(0.85, height * 0.072);
   ctx.lineCap = 'round';
   ctx.stroke();
 
   // Patamares horizontais de agulhas/folhagem
-  const tiers = Math.max(3, Math.min(7, Math.floor(height / (5.5 * scale)) + 2));
+  const tiers = Math.max(3, Math.min(8, Math.floor(height / (5.0 * scale)) + 2));
   for (let t = 0; t < tiers; t++) {
     const u = t / Math.max(1, tiers - 1);
-    const ty = topY + u * height * 0.68;
+    const ty = topY + u * height * 0.72;
     const tx = topX - lean * u * 0.55 + (rand() - 0.5) * 2.5 * scale;
-    const tierSpan = height * (0.24 + Math.sin(u * Math.PI * 0.85) * 0.28) * (0.8 + rand() * 0.35);
+    const tierSpan =
+      height * (0.26 + Math.sin(u * Math.PI * 0.85) * 0.32) * (0.82 + rand() * 0.35);
 
     // Sombra aguada suave atrás do patamar
     ctx.beginPath();
     ctx.ellipse(
       tx,
       ty,
-      tierSpan * 0.58,
-      Math.max(1.2, height * 0.065),
+      tierSpan * 0.6,
+      Math.max(1.3, height * 0.07),
       0,
       0,
       Math.PI * 2
     );
-    ctx.fillStyle = rgbaStr(washColor, alpha * 0.34);
+    ctx.fillStyle = rgbaStr(washColor, alpha * 0.38);
     ctx.fill();
 
     // Traços caligráficos de agulhas
     ctx.beginPath();
-    ctx.moveTo(tx - tierSpan * 0.55, ty + (rand() - 0.5) * 1.5 * scale);
-    ctx.quadraticCurveTo(tx, ty - 1.6 * scale, tx + tierSpan * 0.55, ty + (rand() - 0.5) * 1.5 * scale);
-    ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.94);
-    ctx.lineWidth = Math.max(0.9, height * 0.062);
+    ctx.moveTo(tx - tierSpan * 0.56, ty + (rand() - 0.5) * 1.5 * scale);
+    ctx.quadraticCurveTo(
+      tx,
+      ty - 1.8 * scale,
+      tx + tierSpan * 0.56,
+      ty + (rand() - 0.5) * 1.5 * scale
+    );
+    ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.95);
+    ctx.lineWidth = Math.max(0.95, height * 0.065);
     ctx.stroke();
   }
 
@@ -188,7 +210,7 @@ function drawSansuiPineTree(
 }
 
 /**
- * Desenha as árvores retorcidas de promontório com folhagem em gotas de tinta (como no canto direito da referência)
+ * Desenha as árvores retorcidas de promontório com folhagem em gotas de tinta (Tenbyō / Dianfa)
  */
 function drawSansuiPromontoryTrees(
   ctx: CanvasRenderingContext2D,
@@ -199,20 +221,27 @@ function drawSansuiPromontoryTrees(
   inkColor: string,
   washColor: string,
   alpha: number,
-  seed: number
+  seed: number,
+  extraDense = false
 ) {
+  if (alpha <= 0.02 || height <= 2) return;
   const rand = createSeededRandom(seed);
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
   // 1. Árvore seca retorcida à esquerda
-  const bareX = x - height * 0.32;
+  const bareX = x - height * 0.34;
   const bareY = y + height * 0.06;
-  const bareH = height * 0.78;
+  const bareH = height * 0.8;
   ctx.beginPath();
   ctx.moveTo(bareX, bareY + 4 * scale);
-  ctx.quadraticCurveTo(bareX - bareH * 0.12, bareY - bareH * 0.48, bareX - bareH * 0.24, bareY - bareH);
+  ctx.quadraticCurveTo(
+    bareX - bareH * 0.12,
+    bareY - bareH * 0.48,
+    bareX - bareH * 0.24,
+    bareY - bareH
+  );
   ctx.moveTo(bareX - bareH * 0.1, bareY - bareH * 0.55);
   ctx.lineTo(bareX - bareH * 0.38, bareY - bareH * 0.78);
   ctx.moveTo(bareX - bareH * 0.14, bareY - bareH * 0.68);
@@ -221,12 +250,14 @@ function drawSansuiPromontoryTrees(
   ctx.lineWidth = Math.max(1.2, height * 0.048);
   ctx.stroke();
 
-  // 2. Duas árvores altas com copa em manchas circulares de nanquim (Dianfa)
-  for (let treeIdx = 0; treeIdx < 2; treeIdx++) {
-    const tx = x + treeIdx * height * 0.28;
-    const ty = y + treeIdx * height * 0.05;
-    const th = height * (treeIdx === 0 ? 1.02 : 0.88);
-    const crownX = tx + (treeIdx === 0 ? 0.08 : 0.15) * th;
+  // 2. Árvores altas com copa em manchas circulares de nanquim (Dianfa)
+  const treeTotal = extraDense ? 4 : 2;
+  for (let treeIdx = 0; treeIdx < treeTotal; treeIdx++) {
+    const offsetFactor = treeIdx - (treeTotal - 1) * 0.3;
+    const tx = x + offsetFactor * height * 0.26;
+    const ty = y + Math.abs(offsetFactor) * height * 0.06;
+    const th = height * (1.04 - (treeIdx % 2) * 0.16);
+    const crownX = tx + (treeIdx % 2 === 0 ? 0.08 : -0.1) * th;
     const crownY = ty - th;
 
     ctx.beginPath();
@@ -244,20 +275,20 @@ function drawSansuiPromontoryTrees(
     ctx.stroke();
 
     // Manchas de folhagem em 2 tons (aguada média e nanquim denso)
-    const blobCount = 7;
+    const blobCount = extraDense ? 11 : 7;
     for (let b = 0; b < blobCount; b++) {
       const ang = (b / blobCount) * Math.PI * 2 + rand() * 0.5;
-      const dist = th * (0.06 + rand() * 0.22);
+      const dist = th * (0.05 + rand() * 0.24);
       const bx = crownX + Math.cos(ang) * dist;
-      const by = crownY + Math.sin(ang) * dist * 0.68;
-      const br = Math.max(1.8, th * (0.055 + rand() * 0.045));
+      const by = crownY + Math.sin(ang) * dist * 0.65;
+      const br = Math.max(1.9, th * (0.055 + rand() * 0.05));
       const isDarkBlob = b % 2 === 0;
 
       ctx.beginPath();
       ctx.arc(bx, by, br, 0, Math.PI * 2);
       ctx.fillStyle = rgbaStr(
         isDarkBlob ? inkColor : washColor,
-        alpha * (isDarkBlob ? 0.86 : 0.52)
+        alpha * (isDarkBlob ? 0.88 : 0.56)
       );
       ctx.fill();
     }
@@ -267,11 +298,105 @@ function drawSansuiPromontoryTrees(
 }
 
 /**
- * Renderiza uma massa montanhosa completa com:
+ * Desenha um pavilhão tradicional de montanha (Azumaya / 亭) com beirais curvos entre os pinheiros
+ */
+function drawSansuiMountainPavilion(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  inkColor: string,
+  washColor: string,
+  alpha: number
+) {
+  if (alpha <= 0.02) return;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Plataforma de pedra na encosta
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.85, 0);
+  ctx.lineTo(size * 0.85, 0);
+  ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.9);
+  ctx.lineWidth = Math.max(1.1, size * 0.08);
+  ctx.stroke();
+
+  // Colunas de madeira do pavilhão
+  const colH = size * 0.62;
+  for (const cx of [-size * 0.52, -size * 0.18, size * 0.18, size * 0.52]) {
+    ctx.beginPath();
+    ctx.moveTo(cx, 0);
+    ctx.lineTo(cx, -colH);
+    ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.82);
+    ctx.lineWidth = Math.max(0.8, size * 0.055);
+    ctx.stroke();
+  }
+
+  // Telhado curvo oriental (beirais arrebitados)
+  ctx.beginPath();
+  ctx.moveTo(-size * 1.05, -colH + size * 0.06);
+  ctx.quadraticCurveTo(-size * 0.45, -colH - size * 0.12, 0, -colH - size * 0.52);
+  ctx.quadraticCurveTo(size * 0.45, -colH - size * 0.12, size * 1.05, -colH + size * 0.06);
+  ctx.quadraticCurveTo(0, -colH - size * 0.06, -size * 1.05, -colH + size * 0.06);
+  ctx.closePath();
+  ctx.fillStyle = rgbaStr(washColor, alpha * 0.65);
+  ctx.fill();
+  ctx.strokeStyle = rgbaStr(inkColor, alpha * 0.95);
+  ctx.lineWidth = Math.max(1.0, size * 0.07);
+  ctx.stroke();
+
+  // Pináculo central
+  ctx.beginPath();
+  ctx.moveTo(0, -colH - size * 0.52);
+  ctx.lineTo(0, -colH - size * 0.72);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/**
+ * Desenha um bando de garças / pássaros caligráficos voando entre as montanhas e a neblina
+ */
+function drawSansuiCraneFlock(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  scale: number,
+  inkColor: string,
+  alpha: number,
+  seed: number
+) {
+  if (alpha <= 0.02) return;
+  const rand = createSeededRandom(seed);
+  const count = 5;
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  for (let i = 0; i < count; i++) {
+    const bx = centerX + (i - 2) * 16 * scale + (rand() - 0.5) * 6 * scale;
+    const by = centerY + Math.abs(i - 1.5) * 7 * scale + (rand() - 0.5) * 4 * scale;
+    const span = (4.2 + (1 - i / count) * 2.5) * scale;
+
+    ctx.beginPath();
+    ctx.moveTo(bx - span, by - span * 0.38);
+    ctx.quadraticCurveTo(bx - span * 0.35, by - span * 0.75, bx, by);
+    ctx.quadraticCurveTo(bx + span * 0.35, by - span * 0.75, bx + span, by - span * 0.38);
+    ctx.strokeStyle = rgbaStr(inkColor, alpha * (0.72 - i * 0.08));
+    ctx.lineWidth = Math.max(0.75, 1.05 * scale);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renderiza uma massa montanhosa completa com suporte a progresso de auto-pintura (layerProg 0..1):
  * 1. Aguada atmosférica vertical + dissolução na neblina da base
  * 2. Fissuras e hachuras internas de rocha Cunfa (皴法)
  * 3. Contorno caligráfico de largura variável na crista
- * 4. Vegetação (pinheiros, árvores de promontório ou pontos de musgo Dian-tai)
+ * 4. Vegetação (pinheiros, bosques densos, árvores de promontório, pavilhão e musgo Dian-tai)
  */
 function renderSansuiMountainRidge(
   ctx: CanvasRenderingContext2D,
@@ -282,8 +407,15 @@ function renderSansuiMountainRidge(
   colors: SansuiColors,
   isDark: boolean,
   treeDensity: number,
-  mistDensity: number
+  mistDensity: number,
+  layerProg = 1.0
 ) {
+  if (layerProg <= 0.005) return;
+
+  const washProg = Math.min(1, layerProg / 0.55);
+  const strokeProg = Math.max(0, Math.min(1, (layerProg - 0.12) / 0.68));
+  const detailProg = Math.max(0, Math.min(1, (layerProg - 0.45) / 0.55));
+
   const rand = createSeededRandom(spec.seed);
   const startX = (spec.centerX - spec.spanW * 0.5) * w;
   const endX = (spec.centerX + spec.spanW * 0.5) * w;
@@ -316,7 +448,6 @@ function renderSansuiMountainRidge(
     ridgePts.push({ x, y, u, env });
   }
 
-  // Encontra o ponto mais alto real da crista
   let highestPt = ridgePts[0];
   for (const pt of ridgePts) {
     if (pt.y < highestPt.y) highestPt = pt;
@@ -336,22 +467,20 @@ function renderSansuiMountainRidge(
   ctx.closePath();
 
   const grad = ctx.createLinearGradient(0, highestPt.y, 0, baseY + 4 * scale);
-  const washAlpha = (0.14 + spec.depth * 0.42) * (isDark ? 1.35 : 1.0);
+  const washAlpha = (0.14 + spec.depth * 0.42) * (isDark ? 1.35 : 1.0) * washProg;
   const mistStop = Math.max(0.52, Math.min(0.95, 0.92 - mistDensity * 0.18));
 
   if (isDark) {
-    // No Modo Noturno (Night Obsidian), o corpo da montanha tem um leve brilho lunar no topo
-    // e escurece até fundir-se à neblina noturna na base
     const topTint = mixHex(colors.wash, colors.ink, 0.16 * spec.depth);
-    grad.addColorStop(0.0, rgbaStr(topTint, Math.min(0.95, washAlpha + 0.25)));
+    grad.addColorStop(0.0, rgbaStr(topTint, Math.min(0.95, (washAlpha + 0.25) * washProg)));
     grad.addColorStop(mistStop * 0.65, rgbaStr(colors.wash, Math.min(0.9, washAlpha * 0.85)));
-    grad.addColorStop(1.0, rgbaStr(colors.mist, 0.96));
+    grad.addColorStop(1.0, rgbaStr(colors.mist, 0.96 * washProg));
   } else {
     const topTint = mixHex(colors.wash, colors.ink, 0.18 * spec.depth);
     grad.addColorStop(0.0, rgbaStr(topTint, washAlpha));
     grad.addColorStop(mistStop * 0.6, rgbaStr(colors.wash, washAlpha * 0.58));
-    grad.addColorStop(mistStop, rgbaStr(colors.mist, 0.85));
-    grad.addColorStop(1.0, rgbaStr(colors.mist, 0.98));
+    grad.addColorStop(mistStop, rgbaStr(colors.mist, 0.85 * washProg));
+    grad.addColorStop(1.0, rgbaStr(colors.mist, 0.98 * washProg));
   }
 
   ctx.fillStyle = grad;
@@ -360,15 +489,16 @@ function renderSansuiMountainRidge(
   // =========================================================================
   // PASSO 2: HACHURAS DE ROCHA CUNFA (皴法) RECORTADAS DENTRO DA MONTANHA
   // =========================================================================
-  if (spec.cunfaDensity > 0.05 && spec.depth > 0.22) {
+  if (spec.cunfaDensity > 0.05 && spec.depth > 0.22 && strokeProg > 0.02) {
     ctx.save();
     ctx.clip();
 
-    const strokeCount = Math.floor(
+    const totalStrokes = Math.floor(
       (14 + spec.spanW * 28) * spec.cunfaDensity * (0.55 + spec.depth * 0.65)
     );
+    const activeStrokeCount = Math.floor(totalStrokes * strokeProg);
 
-    for (let c = 0; c < strokeCount; c++) {
+    for (let c = 0; c < activeStrokeCount; c++) {
       const idx = Math.floor((0.08 + rand() * 0.84) * (ridgePts.length - 1));
       const anchor = ridgePts[idx];
       if (!anchor || anchor.env < 0.14) continue;
@@ -381,7 +511,6 @@ function renderSansuiMountainRidge(
       const sy = anchor.y + startOffsetY;
       const lenY = localSlopeH * (0.22 + rand() * 0.48);
 
-      // Direção da fissura acompanha a inclinação da montanha em direção ao centro ou à borda
       const centerDir = anchor.u < 0.5 ? -1 : 1;
       const driftX =
         spec.sharpness > 1.35
@@ -399,16 +528,15 @@ function renderSansuiMountainRidge(
         sy + lenY
       );
 
-      const cunfaAlpha = (0.14 + spec.depth * 0.32) * (0.5 + rand() * 0.6);
+      const cunfaAlpha = (0.14 + spec.depth * 0.32) * (0.5 + rand() * 0.6) * strokeProg;
       ctx.strokeStyle = rgbaStr(colors.ink, cunfaAlpha);
       ctx.lineWidth = (0.55 + rand() * 0.95) * scale;
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Nas montanhas mais próximas, adiciona sub-arestas internas (cristas secundárias)
       if (c % 5 === 0 && spec.depth > 0.55) {
         ctx.beginPath();
-        ctx.moveTo( anchor.x, anchor.y + 1.5 * scale );
+        ctx.moveTo(anchor.x, anchor.y + 1.5 * scale);
         ctx.quadraticCurveTo(
           anchor.x + driftX * 0.45,
           anchor.y + lenY * 0.42,
@@ -427,14 +555,14 @@ function renderSansuiMountainRidge(
   // =========================================================================
   // PASSO 3: CONTORNO CALIGRÁFICO DE LARGURA VARIÁVEL NA CRISTA SUPERIOR
   // =========================================================================
-  if (spec.depth > 0.18) {
+  if (spec.depth > 0.18 && strokeProg > 0.01) {
     const ridgeAlpha = Math.min(0.98, 0.22 + spec.depth * 0.76);
     const maxStrokeW = (1.1 + spec.depth * 2.4) * scale;
+    const maxSegIndex = Math.floor((ridgePts.length - 1) * strokeProg);
 
-    for (let i = 0; i < ridgePts.length - 1; i++) {
+    for (let i = 0; i < maxSegIndex; i++) {
       const p0 = ridgePts[i];
       const p1 = ridgePts[i + 1];
-      // A linha de contorno desaparece suavemente ao tocar a base de neblina
       const edgeFade = Math.sin(p0.u * Math.PI);
       if (edgeFade < 0.04) continue;
 
@@ -452,67 +580,152 @@ function renderSansuiMountainRidge(
   }
 
   // =========================================================================
-  // PASSO 4: PINHEIROS, ÁRVORES DE PROMONTÓRIO & PONTOS DE MUSGO (DIANTAI)
+  // PASSO 4: PAVILHÃO ORIENTAL NA ENCOSTA (OPCIONAL)
   // =========================================================================
-  if (spec.treeStyle !== 'none' && treeDensity > 0.05) {
+  if (spec.hasPavilion && detailProg > 0.05) {
+    const pavIdx = Math.floor(ridgePts.length * 0.54);
+    const pavPt = ridgePts[pavIdx];
+    if (pavPt) {
+      drawSansuiMountainPavilion(
+        ctx,
+        pavPt.x,
+        pavPt.y + 4 * scale,
+        (16 + spec.depth * 10) * scale,
+        colors.ink,
+        colors.wash,
+        detailProg * (0.55 + spec.depth * 0.42)
+      );
+    }
+  }
+
+  // =========================================================================
+  // PASSO 5: PINHEIROS, BOSQUES DENSOS, PROMONTÓRIO & PONTOS DE MUSGO
+  // =========================================================================
+  if (spec.treeStyle !== 'none' && treeDensity > 0.05 && detailProg > 0.02) {
     if (spec.treeStyle === 'foliage') {
-      // Árvores grandes em primeiro plano (estilo promontório)
-      const anchorIdx = Math.floor(ridgePts.length * 0.46);
+      const anchorIdx = Math.floor(ridgePts.length * 0.44);
       const anchor = ridgePts[anchorIdx];
       if (anchor) {
         drawSansuiPromontoryTrees(
           ctx,
           anchor.x,
           anchor.y + 8 * scale,
-          Math.min(72 * scale, maxAmplitude * 1.15),
+          Math.min(76 * scale, maxAmplitude * 1.18) * (0.4 + 0.6 * detailProg),
           scale,
           colors.ink,
           colors.wash,
-          0.95,
-          spec.seed + 501
+          0.96 * detailProg,
+          spec.seed + 501,
+          treeDensity > 1.25
         );
       }
-    } else if (spec.treeStyle === 'pines') {
-      const pineCount = Math.max(
-        1,
-        Math.floor((3 + spec.spanW * 8) * treeDensity * (0.5 + spec.depth * 0.7))
-      );
-      for (let p = 0; p < pineCount; p++) {
-        const idx = Math.floor((0.15 + rand() * 0.7) * (ridgePts.length - 1));
-        const pt = ridgePts[idx];
-        if (!pt || pt.env < 0.22) continue;
-
-        const pineH = (9 + rand() * 16 * spec.depth) * scale;
+      // Pinheiros complementares acompanhando a encosta do promontório
+      const sidePines = Math.floor(3 * treeDensity);
+      for (let sp = 0; sp < sidePines; sp++) {
+        const pIdx = Math.floor((0.22 + sp * 0.18) * (ridgePts.length - 1));
+        const pPt = ridgePts[pIdx];
+        if (!pPt) continue;
         drawSansuiPineTree(
           ctx,
-          pt.x,
-          pt.y + (rand() * 5 + 1) * scale,
+          pPt.x,
+          pPt.y + 4 * scale,
+          (18 + rand() * 14) * scale * detailProg,
+          scale,
+          colors.ink,
+          colors.wash,
+          0.9 * detailProg,
+          spec.seed + 610 + sp * 19
+        );
+      }
+    } else if (spec.treeStyle === 'dense_forest') {
+      // Floresta densa combinando muitos pinheiros imperiais + árvores de copa pontilhada + pontos de musgo
+      const pineCount = Math.max(
+        4,
+        Math.floor((9 + spec.spanW * 18) * treeDensity * (0.65 + spec.depth * 0.65))
+      );
+      const visiblePines = Math.ceil(pineCount * detailProg);
+
+      for (let p = 0; p < visiblePines; p++) {
+        const idx = Math.floor((0.1 + rand() * 0.8) * (ridgePts.length - 1));
+        const pt = ridgePts[idx];
+        if (!pt || pt.env < 0.16) continue;
+
+        const slopeOffset = rand() * Math.min(28 * scale, (baseY - pt.y) * 0.35);
+        const pineH = (11 + rand() * 22 * spec.depth) * scale;
+        drawSansuiPineTree(
+          ctx,
+          pt.x + (rand() - 0.5) * 6 * scale,
+          pt.y + slopeOffset + 2 * scale,
           pineH,
           scale,
           colors.ink,
           colors.wash,
-          Math.min(0.96, 0.45 + spec.depth * 0.55),
+          Math.min(0.96, (0.48 + spec.depth * 0.5) * detailProg),
+          spec.seed + 800 + p * 31
+        );
+      }
+
+      // Bosques de árvores de copa pontilhada (Tenbyō) entre os pinheiros nas camadas mais próximas
+      if (spec.depth > 0.65) {
+        const groveIdx = Math.floor((0.35 + rand() * 0.3) * (ridgePts.length - 1));
+        const grovePt = ridgePts[groveIdx];
+        if (grovePt) {
+          drawSansuiPromontoryTrees(
+            ctx,
+            grovePt.x,
+            grovePt.y + 6 * scale,
+            (32 + spec.depth * 24) * scale * detailProg,
+            scale,
+            colors.ink,
+            colors.wash,
+            0.9 * detailProg,
+            spec.seed + 950,
+            true
+          );
+        }
+      }
+    } else if (spec.treeStyle === 'pines') {
+      const pineCount = Math.max(
+        2,
+        Math.floor((4 + spec.spanW * 11) * treeDensity * (0.55 + spec.depth * 0.7))
+      );
+      const visiblePines = Math.ceil(pineCount * detailProg);
+
+      for (let p = 0; p < visiblePines; p++) {
+        const idx = Math.floor((0.14 + rand() * 0.72) * (ridgePts.length - 1));
+        const pt = ridgePts[idx];
+        if (!pt || pt.env < 0.2) continue;
+
+        const pineH = (10 + rand() * 18 * spec.depth) * scale;
+        drawSansuiPineTree(
+          ctx,
+          pt.x,
+          pt.y + (rand() * 6 + 1) * scale,
+          pineH,
+          scale,
+          colors.ink,
+          colors.wash,
+          Math.min(0.96, (0.45 + spec.depth * 0.55) * detailProg),
           spec.seed + 700 + p * 29
         );
       }
     } else if (spec.treeStyle === 'distant_dots') {
-      // Pequenos arbustos e árvores distantes ao longo da crista da ilha
-      const dotCount = Math.floor(12 * treeDensity);
+      const dotCount = Math.floor(16 * treeDensity * detailProg);
       for (let d = 0; d < dotCount; d++) {
-        const idx = Math.floor((0.18 + rand() * 0.64) * (ridgePts.length - 1));
+        const idx = Math.floor((0.15 + rand() * 0.7) * (ridgePts.length - 1));
         const pt = ridgePts[idx];
-        if (!pt || pt.env < 0.25) continue;
-        const hTick = (2.5 + rand() * 3.8) * scale;
+        if (!pt || pt.env < 0.22) continue;
+        const hTick = (2.8 + rand() * 4.2) * scale;
         ctx.beginPath();
         ctx.moveTo(pt.x, pt.y + 0.5 * scale);
         ctx.lineTo(pt.x + (rand() - 0.5) * 1.5 * scale, pt.y - hTick);
-        ctx.strokeStyle = rgbaStr(colors.ink, 0.55 * spec.depth);
+        ctx.strokeStyle = rgbaStr(colors.ink, 0.58 * spec.depth * detailProg);
         ctx.lineWidth = 0.85 * scale;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y - hTick, (1.1 + rand() * 1.2) * scale, 0, Math.PI * 2);
-        ctx.fillStyle = rgbaStr(colors.ink, 0.5 * spec.depth);
+        ctx.arc(pt.x, pt.y - hTick, (1.2 + rand() * 1.4) * scale, 0, Math.PI * 2);
+        ctx.fillStyle = rgbaStr(colors.ink, 0.52 * spec.depth * detailProg);
         ctx.fill();
       }
     }
@@ -532,6 +745,7 @@ function drawSansuiSampanBoat(
   inkColor: string,
   alpha: number
 ) {
+  if (alpha <= 0.02) return;
   ctx.save();
   ctx.translate(x, y);
 
@@ -597,7 +811,6 @@ function buildCompositionRidges(
   const ridges: MountainRidgeSpec[] = [];
 
   if (composition === 'panoramic_river') {
-    // 1. Silhuetas muito distantes na neblina ao fundo (direita e esquerda)
     ridges.push({
       centerX: 0.71 + (rand() - 0.5) * 0.06,
       spanW: 0.42,
@@ -622,7 +835,6 @@ function buildCompositionRidges(
       seed: seed + 23,
     });
 
-    // 2. Ilhas alongadas de meio-plano (como no banner Kalpa Shan)
     ridges.push({
       centerX: 0.58 + (rand() - 0.5) * 0.05,
       spanW: 0.34,
@@ -645,15 +857,14 @@ function buildCompositionRidges(
       skew: -0.1,
       depth: 0.66,
       cunfaDensity: 0.85,
-      treeStyle: 'distant_dots',
+      treeStyle: 'pines',
       seed: seed + 53,
     });
 
-    // 3. Promontório rochoso em primeiro plano no canto inferior direito com árvores expressivas
     ridges.push({
-      centerX: 0.93,
-      spanW: 0.29,
-      peakY: 0.81,
+      centerX: 0.92,
+      spanW: 0.31,
+      peakY: 0.8,
       baseY: 1.02,
       sharpness: 0.82,
       skew: -0.15,
@@ -666,8 +877,90 @@ function buildCompositionRidges(
     return ridges;
   }
 
+  if (composition === 'dense_pine_sanctuary') {
+    // 1. Picos distantes na neblina alta
+    ridges.push({
+      centerX: 0.32 + (rand() - 0.5) * 0.06,
+      spanW: 0.52,
+      peakY: 0.14 + rand() * 0.04,
+      baseY: 0.62,
+      sharpness: 1.25,
+      depth: 0.18,
+      cunfaDensity: 0.2,
+      treeStyle: 'distant_dots',
+      seed: seed + 503,
+    });
+    ridges.push({
+      centerX: 0.76 + (rand() - 0.5) * 0.06,
+      spanW: 0.48,
+      peakY: 0.18 + rand() * 0.04,
+      baseY: 0.65,
+      sharpness: 1.35,
+      depth: 0.26,
+      cunfaDensity: 0.3,
+      treeStyle: 'distant_dots',
+      seed: seed + 521,
+    });
+
+    // 2. Montanha santuário central-direita com Pavilhão Oriental e mata de pinheiros
+    ridges.push({
+      centerX: 0.68 + (rand() - 0.5) * 0.05,
+      spanW: 0.48,
+      peakY: 0.26 + rand() * 0.04,
+      baseY: 0.82,
+      sharpness: 1.15,
+      skew: -0.14,
+      depth: 0.58,
+      cunfaDensity: 0.95,
+      treeStyle: 'dense_forest',
+      hasPavilion: true,
+      seed: seed + 547,
+    });
+
+    // 3. Encosta florestal esquerda em meio-plano
+    ridges.push({
+      centerX: 0.24 + (rand() - 0.5) * 0.05,
+      spanW: 0.5,
+      peakY: 0.36 + rand() * 0.04,
+      baseY: 0.88,
+      sharpness: 1.08,
+      skew: 0.16,
+      depth: 0.74,
+      cunfaDensity: 1.1,
+      treeStyle: 'dense_forest',
+      seed: seed + 577,
+    });
+
+    // 4. Dois promontórios densos em primeiro plano emoldurando o rio
+    ridges.push({
+      centerX: 0.86,
+      spanW: 0.42,
+      peakY: 0.56,
+      baseY: 1.03,
+      sharpness: 0.95,
+      skew: -0.18,
+      depth: 0.92,
+      cunfaDensity: 1.25,
+      treeStyle: 'dense_forest',
+      seed: seed + 601,
+    });
+    ridges.push({
+      centerX: 0.16,
+      spanW: 0.38,
+      peakY: 0.68,
+      baseY: 1.04,
+      sharpness: 0.88,
+      skew: 0.15,
+      depth: 0.99,
+      cunfaDensity: 1.3,
+      treeStyle: 'foliage',
+      seed: seed + 631,
+    });
+
+    return ridges;
+  }
+
   if (composition === 'karst_peaks') {
-    // 1. Picos fantasmas distantes na bruma
     ridges.push({
       centerX: 0.57 + (rand() - 0.5) * 0.06,
       spanW: 0.36,
@@ -680,7 +973,6 @@ function buildCompositionRidges(
       seed: seed + 101,
     });
 
-    // 2. Pico Karst secundário à direita
     ridges.push({
       centerX: 0.9 + (rand() - 0.5) * 0.04,
       spanW: 0.32,
@@ -694,7 +986,6 @@ function buildCompositionRidges(
       seed: seed + 131,
     });
 
-    // 3. Grande Torre Karst Principal (protagonista vertical)
     ridges.push({
       centerX: 0.68 + (rand() - 0.5) * 0.05,
       spanW: 0.31,
@@ -708,16 +999,15 @@ function buildCompositionRidges(
       seed: seed + 167,
     });
 
-    // 4. Margem rochosa com pinheiros altos na base direita
     ridges.push({
       centerX: 0.92,
-      spanW: 0.32,
-      peakY: 0.86,
+      spanW: 0.34,
+      peakY: 0.84,
       baseY: 1.03,
       sharpness: 0.88,
       depth: 1.0,
       cunfaDensity: 1.2,
-      treeStyle: 'pines',
+      treeStyle: 'dense_forest',
       seed: seed + 199,
     });
 
@@ -725,7 +1015,6 @@ function buildCompositionRidges(
   }
 
   if (composition === 'twin_gorges') {
-    // 1. Cordilheiras atmosféricas de fundo
     ridges.push({
       centerX: 0.18,
       spanW: 0.45,
@@ -749,7 +1038,6 @@ function buildCompositionRidges(
       seed: seed + 223,
     });
 
-    // 2. Três grandes picos escarpados (esquerda, centro-direita alto, direita)
     ridges.push({
       centerX: 0.28 + (rand() - 0.5) * 0.04,
       spanW: 0.28,
@@ -785,26 +1073,25 @@ function buildCompositionRidges(
       seed: seed + 281,
     });
 
-    // 3. Ilha rochosa com pinheiros no canto inferior esquerdo
     ridges.push({
       centerX: 0.12,
-      spanW: 0.34,
-      peakY: 0.85,
+      spanW: 0.36,
+      peakY: 0.84,
       baseY: 1.03,
       sharpness: 0.9,
       depth: 1.0,
       cunfaDensity: 1.2,
-      treeStyle: 'pines',
+      treeStyle: 'dense_forest',
       seed: seed + 307,
     });
 
     return ridges;
   }
 
-  // Default: 'layered_valley' (Vale das Cinco Neblinas com múltiplas colinas entrelaçadas)
+  // Default: 'layered_valley' (Vale das Cinco Neblinas com múltiplas colinas entrelaçadas e matas ricas)
   const totalLayers = Math.max(4, Math.min(8, ridgeLayers));
   for (let l = 0; l < totalLayers; l++) {
-    const u = l / Math.max(1, totalLayers - 1); // 0 (fundo) -> 1 (frente)
+    const u = l / Math.max(1, totalLayers - 1);
     const isLeft = l % 2 === 0;
     const centerX = isLeft
       ? 0.22 + (rand() - 0.4) * 0.18
@@ -822,7 +1109,8 @@ function buildCompositionRidges(
       skew: isLeft ? -0.14 : 0.14,
       depth: 0.16 + Math.pow(u, 0.85) * 0.84,
       cunfaDensity: 0.35 + u * 0.95,
-      treeStyle: u < 0.25 ? 'none' : 'pines',
+      treeStyle: u < 0.22 ? 'distant_dots' : u > 0.65 ? 'dense_forest' : 'pines',
+      hasPavilion: l === totalLayers - 2,
       seed: seed + 400 + l * 43,
     });
   }
@@ -833,7 +1121,7 @@ function buildCompositionRidges(
 /**
  * Componente <SumiSansui />
  * Motor próprio de pintura gerativa de paisagens Sansui / Shan-Shui (山水) controlado por seed,
- * com suporte a temas prontos, Modo Noturno, variáveis CSS e cores customizadas.
+ * com suporte a auto-pintura ao vivo ou modo fixo, temas prontos, Modo Noturno, variáveis CSS e cores customizadas.
  */
 export const SumiSansui: React.FC<SumiSansuiProps> = ({
   seed = 8472,
@@ -844,17 +1132,23 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
   inkColor,
   washColor,
   ridgeLayers = 6,
-  treeDensity = 1.0,
+  treeDensity = 1.15,
   mistDensity = 1.0,
   showBoat = true,
   animated = false,
+  autoPaint = true,
+  paintOnView = true,
+  paintDuration = 2.2,
+  replayTrigger = 0,
   actionsRef,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const staticMountainCacheRef = useRef<HTMLCanvasElement | null>(null);
   const cacheKeyRef = useRef<string>('');
-  const isVisibleRef = useRef<boolean>(true);
+  const isVisibleRef = useRef<boolean>(!paintOnView);
+  const hasEnteredViewRef = useRef<boolean>(!paintOnView);
+  const paintStartTimeRef = useRef<number | null>(null);
 
   const exportPng = useCallback(
     (filename?: string) => {
@@ -868,21 +1162,42 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
     [composition, seed]
   );
 
+  const replayPaint = useCallback(() => {
+    paintStartTimeRef.current = performance.now();
+    cacheKeyRef.current = '';
+  }, []);
+
   useEffect(() => {
     if (!actionsRef) return;
-    actionsRef.current = { exportPng };
-  }, [actionsRef, exportPng]);
+    actionsRef.current = { exportPng, replayPaint };
+  }, [actionsRef, exportPng, replayPaint]);
+
+  // Reinicia a cerimônia de pintura quando a seed, composição ou replayTrigger mudam
+  useEffect(() => {
+    if (autoPaint && hasEnteredViewRef.current) {
+      paintStartTimeRef.current = performance.now();
+      cacheKeyRef.current = '';
+    }
+  }, [seed, composition, replayTrigger, autoPaint]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof IntersectionObserver === 'undefined') return;
+    if (!canvas || typeof IntersectionObserver === 'undefined') {
+      isVisibleRef.current = true;
+      hasEnteredViewRef.current = true;
+      return;
+    }
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           isVisibleRef.current = entry.isIntersecting;
+          if (entry.isIntersecting && !hasEnteredViewRef.current) {
+            hasEnteredViewRef.current = true;
+            paintStartTimeRef.current = performance.now();
+          }
         });
       },
-      { rootMargin: '100px 0px', threshold: 0.01 }
+      { rootMargin: '60px 0px', threshold: 0.12 }
     );
     io.observe(canvas);
     return () => io.disconnect();
@@ -906,12 +1221,146 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
     });
     ro.observe(canvas);
 
-    const startTime = performance.now();
+    const mountTime = performance.now();
+    if (!paintOnView && paintStartTimeRef.current === null) {
+      paintStartTimeRef.current = mountTime;
+    }
+
+    const drawSceneToContext = (
+      targetCtx: CanvasRenderingContext2D,
+      w: number,
+      h: number,
+      scale: number,
+      palette: SansuiColors,
+      isDark: boolean,
+      overallPaintProg: number
+    ) => {
+      // Fundo Papel Washi / Céu
+      targetCtx.fillStyle = palette.background;
+      targetCtx.fillRect(0, 0, w, h);
+
+      // Textura sutil de fibras de papel Washi / Seda
+      const fiberRand = createSeededRandom(seed + 999);
+      targetCtx.strokeStyle = rgbaStr(palette.ink, isDark ? 0.03 : 0.022);
+      targetCtx.lineWidth = 0.6;
+      for (let f = 0; f < 42; f++) {
+        const fy = fiberRand() * h;
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, fy);
+        targetCtx.lineTo(w, fy + (fiberRand() - 0.5) * 4);
+        targetCtx.stroke();
+      }
+
+      const ridges = buildCompositionRidges(composition, seed, ridgeLayers);
+      const totalRidges = ridges.length;
+
+      // Calcula o progresso individual de cada cadeia (das mais distantes às mais próximas)
+      const getRidgeProgress = (index: number) => {
+        if (overallPaintProg >= 0.999) return 1.0;
+        const startSlot = (index / Math.max(1, totalRidges)) * 0.45;
+        const spanSlot = 0.55;
+        const raw = Math.max(0, Math.min(1, (overallPaintProg - startSlot) / spanSlot));
+        // Easing cubic-out suave
+        return 1 - Math.pow(1 - raw, 2.6);
+      };
+
+      const backRidges = ridges
+        .map((r, i) => ({ r, i }))
+        .filter((item) => item.r.depth < 0.9);
+      const frontRidges = ridges
+        .map((r, i) => ({ r, i }))
+        .filter((item) => item.r.depth >= 0.9);
+
+      for (const { r: ridge, i } of backRidges) {
+        renderSansuiMountainRidge(
+          targetCtx,
+          w,
+          h,
+          scale,
+          ridge,
+          palette,
+          isDark,
+          treeDensity,
+          mistDensity,
+          getRidgeProgress(i)
+        );
+      }
+
+      // Bando de garças / pássaros voando entre os picos distantes
+      const craneProg = Math.max(0, Math.min(1, (overallPaintProg - 0.55) / 0.45));
+      if (craneProg > 0.02) {
+        drawSansuiCraneFlock(
+          targetCtx,
+          w * (composition === 'panoramic_river' ? 0.64 : 0.46),
+          h * 0.24,
+          scale,
+          palette.ink,
+          craneProg * 0.78,
+          seed + 888
+        );
+      }
+
+      // Linhas horizontais serenas da extensão d'água
+      const waterProg = Math.max(0, Math.min(1, (overallPaintProg - 0.3) / 0.65));
+      if (waterProg > 0.02) {
+        const waterRand = createSeededRandom(seed + 777);
+        const waterTopY =
+          composition === 'panoramic_river'
+            ? h * 0.37
+            : composition === 'layered_valley' || composition === 'dense_pine_sanctuary'
+              ? h * 0.72
+              : h * 0.88;
+        const rippleCount = Math.floor(
+          (composition === 'panoramic_river'
+            ? 58
+            : composition === 'layered_valley' || composition === 'dense_pine_sanctuary'
+              ? 24
+              : 18) * waterProg
+        );
+
+        for (let r = 0; r < rippleCount; r++) {
+          const uY = Math.pow(waterRand(), 0.85);
+          const wy = waterTopY + uY * (h * 0.96 - waterTopY);
+          const wx = waterRand() * w * 0.92;
+          const wLen =
+            (28 + waterRand() * 135) * scale * (0.65 + (1 - uY) * 0.5) * waterProg;
+
+          targetCtx.beginPath();
+          targetCtx.moveTo(wx - wLen * 0.5, wy);
+          targetCtx.lineTo(wx + wLen * 0.5, wy);
+          targetCtx.strokeStyle = rgbaStr(
+            palette.ink,
+            (isDark ? 0.14 : 0.18) * (0.45 + waterRand() * 0.55) * waterProg
+          );
+          targetCtx.lineWidth = Math.max(0.5, 0.75 * scale);
+          targetCtx.stroke();
+        }
+      }
+
+      for (const { r: ridge, i } of frontRidges) {
+        renderSansuiMountainRidge(
+          targetCtx,
+          w,
+          h,
+          scale,
+          ridge,
+          palette,
+          isDark,
+          treeDensity,
+          mistDensity,
+          getRidgeProgress(i)
+        );
+      }
+    };
 
     const renderFrame = (now: number) => {
-      if (!isVisibleRef.current && animated) {
+      if (!isVisibleRef.current) {
         animId = requestAnimationFrame(renderFrame);
         return;
+      }
+
+      if (paintStartTimeRef.current === null) {
+        paintStartTimeRef.current = now;
       }
 
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -937,114 +1386,43 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
       );
 
       const scale = Math.max(0.55, Math.min(w / 900, h / 460));
-      const nextCacheKey = `${targetW}x${targetH}:${seed}:${composition}:${ridgeLayers}:${treeDensity}:${mistDensity}:${palette.background}:${palette.ink}:${palette.wash}:${palette.mist}:${palette.accent}`;
+      const paintElapsed = (now - paintStartTimeRef.current) / 1000;
+      const overallPaintProg = autoPaint
+        ? Math.max(0, Math.min(1, paintElapsed / Math.max(0.4, paintDuration)))
+        : 1.0;
+
+      const isPaintingNow = overallPaintProg < 0.999;
 
       const ctx = canvas.getContext('2d');
       const cCtx = cacheCanvas.getContext('2d');
       if (!ctx || !cCtx) return;
 
-      // 1. Constrói o cache estático das cadeias de montanhas, Cunfa e árvores
-      if (cacheKeyRef.current !== nextCacheKey) {
-        cCtx.save();
-        cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        cCtx.clearRect(0, 0, w, h);
+      const nextCacheKey = `${targetW}x${targetH}:${seed}:${composition}:${ridgeLayers}:${treeDensity}:${mistDensity}:${palette.background}:${palette.ink}:${palette.wash}:${palette.mist}:${palette.accent}`;
 
-        // Fundo Papel Washi / Céu
-        cCtx.fillStyle = palette.background;
-        cCtx.fillRect(0, 0, w, h);
-
-        // Textura sutil de fibras de papel Washi / Seda
-        const fiberRand = createSeededRandom(seed + 999);
-        cCtx.strokeStyle = rgbaStr(palette.ink, isDark ? 0.03 : 0.022);
-        cCtx.lineWidth = 0.6;
-        for (let f = 0; f < 42; f++) {
-          const fy = fiberRand() * h;
-          cCtx.beginPath();
-          cCtx.moveTo(0, fy);
-          cCtx.lineTo(w, fy + (fiberRand() - 0.5) * 4);
-          cCtx.stroke();
-        }
-
-        const ridges = buildCompositionRidges(composition, seed, ridgeLayers);
-
-        // No modo panoramic_river, desenha as cadeias distantes primeiro, depois as linhas d'água,
-        // e por último o promontório em primeiro plano para sobreposição perfeita
-        const backRidges = ridges.filter((r) => r.depth < 0.9);
-        const frontRidges = ridges.filter((r) => r.depth >= 0.9);
-
-        for (const ridge of backRidges) {
-          renderSansuiMountainRidge(
-            cCtx,
-            w,
-            h,
-            scale,
-            ridge,
-            palette,
-            isDark,
-            treeDensity,
-            mistDensity
-          );
-        }
-
-        // Linhas horizontais serenas da extensão d'água (estáticas no buffer base)
-        const waterRand = createSeededRandom(seed + 777);
-        const waterTopY =
-          composition === 'panoramic_river'
-            ? h * 0.37
-            : composition === 'layered_valley'
-              ? h * 0.72
-              : h * 0.88;
-        const rippleCount =
-          composition === 'panoramic_river'
-            ? 58
-            : composition === 'layered_valley'
-              ? 18
-              : 16;
-
-        for (let r = 0; r < rippleCount; r++) {
-          const uY = Math.pow(waterRand(), 0.85);
-          const wy = waterTopY + uY * (h * 0.96 - waterTopY);
-          const wx = waterRand() * w * 0.92;
-          const wLen = (28 + waterRand() * 135) * scale * (0.65 + (1 - uY) * 0.5);
-
-          cCtx.beginPath();
-          cCtx.moveTo(wx - wLen * 0.5, wy);
-          cCtx.lineTo(wx + wLen * 0.5, wy);
-          cCtx.strokeStyle = rgbaStr(
-            palette.ink,
-            (isDark ? 0.14 : 0.18) * (0.45 + waterRand() * 0.55)
-          );
-          cCtx.lineWidth = Math.max(0.5, 0.75 * scale);
-          cCtx.stroke();
-        }
-
-        for (const ridge of frontRidges) {
-          renderSansuiMountainRidge(
-            cCtx,
-            w,
-            h,
-            scale,
-            ridge,
-            palette,
-            isDark,
-            treeDensity,
-            mistDensity
-          );
-        }
-
-        cCtx.restore();
-        cacheKeyRef.current = nextCacheKey;
-      }
-
-      // 2. Desenha o buffer cacheado + barco solitário e bruma viva opcional
       ctx.save();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(cacheCanvas, 0, 0, w, h);
 
-      const elapsed = animated ? (now - startTime) / 1000 : 0;
+      if (isPaintingNow) {
+        // Durante a cerimônia de auto-pintura, desenha diretamente com o progresso atual
+        drawSceneToContext(ctx, w, h, scale, palette, isDark, overallPaintProg);
+      } else {
+        // Quando a pintura atinge 100%, grava no cache offscreen para máxima performance (60/120 FPS)
+        if (cacheKeyRef.current !== nextCacheKey) {
+          cCtx.save();
+          cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          cCtx.clearRect(0, 0, w, h);
+          drawSceneToContext(cCtx, w, h, scale, palette, isDark, 1.0);
+          cCtx.restore();
+          cacheKeyRef.current = nextCacheKey;
+        }
+        ctx.drawImage(cacheCanvas, 0, 0, w, h);
+      }
 
-      if (showBoat) {
+      const elapsed = animated ? (now - mountTime) / 1000 : 0;
+      const boatAlpha = Math.max(0, Math.min(1, (overallPaintProg - 0.55) / 0.45));
+
+      if (showBoat && boatAlpha > 0.02) {
         const boatRand = createSeededRandom(seed + 555);
         let boatX = w * 0.61;
         let boatY = h * 0.81;
@@ -1058,10 +1436,10 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
           boatX = w * (0.43 + (boatRand() - 0.5) * 0.06);
           boatY = h * 0.94;
           boatSize = 12 * scale;
-        } else if (composition === 'layered_valley') {
-          boatX = w * 0.51;
-          boatY = h * 0.9;
-          boatSize = 10.5 * scale;
+        } else if (composition === 'layered_valley' || composition === 'dense_pine_sanctuary') {
+          boatX = w * 0.52;
+          boatY = h * 0.91;
+          boatSize = 11.5 * scale;
         } else if (composition === 'twin_gorges') {
           boatX = w * 0.37;
           boatY = h * 0.94;
@@ -1077,13 +1455,13 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
           boatY + bobY,
           Math.max(8, boatSize),
           palette.ink,
-          0.92
+          0.92 * boatAlpha
         );
       }
 
       ctx.restore();
 
-      if (animated) {
+      if (isPaintingNow || animated) {
         animId = requestAnimationFrame(renderFrame);
       }
     };
@@ -1106,6 +1484,10 @@ export const SumiSansui: React.FC<SumiSansuiProps> = ({
     mistDensity,
     showBoat,
     animated,
+    autoPaint,
+    paintOnView,
+    paintDuration,
+    replayTrigger,
   ]);
 
   return (

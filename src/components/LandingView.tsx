@@ -7,7 +7,9 @@ import {
   JapaneseCalligraphy,
   MAGIC_SCHOOLS,
   MaskChoreography,
+  SANSUI_COMPOSITIONS,
   SANSUI_THEMES,
+  SansuiComposition,
   SansuiThemeId,
   SchoolId,
   SumiBrandEmblem,
@@ -121,12 +123,39 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
 
   // Estados da Seção Paisagens Gerativas Sansui (<SumiSansui />)
   const [sansuiBannerSeed, setSansuiBannerSeed] = useState<number>(4096);
-  const [sansuiCardSeeds, setSansuiCardSeeds] = useState<[number, number, number]>([
-    7142, 9321, 5819,
+  const [sansuiCardSeeds, setSansuiCardSeeds] = useState<[number, number, number, number]>([
+    6824, 7142, 9321, 5819,
   ]);
   const [sansuiBannerTheme, setSansuiBannerTheme] =
     useState<Exclude<SansuiThemeId, 'auto'>>('classic_washi');
   const [sansuiCustomWash, setSansuiCustomWash] = useState<string | undefined>(undefined);
+  const [sansuiAutoPaint, setSansuiAutoPaint] = useState<boolean>(true);
+  const [sansuiReplayTrigger, setSansuiReplayTrigger] = useState<number>(1);
+  const [fullscreenSansui, setFullscreenSansui] = useState<{
+    composition: SansuiComposition;
+    seed: number;
+    theme: Exclude<SansuiThemeId, 'auto'>;
+    treeDensity: number;
+    washColor?: string;
+    autoPaint: boolean;
+    replayKey: number;
+  } | null>(null);
+
+  const bannerActionsRef = useRef<{ exportPng: (f?: string) => void; replayPaint?: () => void } | null>(null);
+  const card0ActionsRef = useRef<{ exportPng: (f?: string) => void; replayPaint?: () => void } | null>(null);
+  const card1ActionsRef = useRef<{ exportPng: (f?: string) => void; replayPaint?: () => void } | null>(null);
+  const card2ActionsRef = useRef<{ exportPng: (f?: string) => void; replayPaint?: () => void } | null>(null);
+  const card3ActionsRef = useRef<{ exportPng: (f?: string) => void; replayPaint?: () => void } | null>(null);
+  const modalActionsRef = useRef<{ exportPng: (f?: string) => void; replayPaint?: () => void } | null>(null);
+
+  useEffect(() => {
+    if (!fullscreenSansui) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreenSansui(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreenSansui]);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const heroBgRef = useRef<HTMLDivElement | null>(null);
@@ -966,7 +995,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
         className="relative py-16 sm:py-24 lg:py-28 border-b border-[#D5CEC0]/70 overflow-hidden bg-[#ECE6DA]/55"
       >
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-6 sm:space-y-8">
-          {/* Cabeçalho & Controles Rápidos de Semente (Seed) e Paleta */}
+          {/* Cabeçalho & Controles Rápidos de Semente (Seed), Auto-Pintura e Paleta */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6">
             <div className="bg-[#F8F4EC]/88 backdrop-blur-xl border border-white/80 rounded-2xl p-5 sm:p-6 shadow-[0_10px_32px_rgba(17,16,14,0.05)] max-w-2xl">
               <div className="flex flex-wrap items-center gap-2 text-xs text-[#C8232C] font-medium mb-2">
@@ -983,118 +1012,173 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-[#11100E] tracking-tight mb-2"
                 style={{ textWrap: 'balance' }}
               >
-                Montanhas, vales e rios infinitos com uma única linha de código.
+                Montanhas, florestas densas e rios infinitos pintados ao vivo.
               </h2>
               <p className="text-xs sm:text-sm text-[#252320] leading-relaxed">
                 Cada número de{' '}
-                <code className="font-tabular font-semibold text-[#11100E]">seed</code> esculpe uma
-                nova cadeia de montanhas com hachuras de rocha, pinheiros e pescador solitário,
-                adaptando-se à cor do seu projeto ou ao Modo Noturno.
+                <code className="font-tabular font-semibold text-[#11100E]">seed</code> esculpe
+                cordilheiras, matas de pinheiros, pavilhões e barcos solitários. Escolha entre{' '}
+                <strong>auto-pintura progressiva</strong> ao entrar na tela ou{' '}
+                <strong>renderização fixa</strong>, exporte em PNG ou abra em tela cheia.
               </p>
             </div>
 
-            {/* Sorteador de Seeds & Seletor de Temas / Cor Customizada */}
-            <div className="flex flex-wrap items-center gap-2 bg-[#F8F4EC]/88 backdrop-blur-xl p-3 rounded-xl border border-white/80 shadow-[0_8px_24px_rgba(17,16,14,0.05)]">
-              <SumiButton
-                variant="crimson"
-                size="sm"
-                seed={145}
-                onClick={() => {
-                  setSansuiBannerSeed(Math.floor(Math.random() * 89000) + 1000);
-                  setSansuiCardSeeds([
-                    Math.floor(Math.random() * 89000) + 1000,
-                    Math.floor(Math.random() * 89000) + 1000,
-                    Math.floor(Math.random() * 89000) + 1000,
-                  ]);
-                }}
-              >
-                <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
-                  <SumiIcon name="replay" size={16} color="#11100E" />
-                </span>
-                <span>Sortear Novas Seeds</span>
-              </SumiButton>
-
-              {(
-                [
-                  { id: 'classic_washi', label: 'Washi Clássico' },
-                  { id: 'jade_mineral', label: 'Verde Jade' },
-                  { id: 'night_obsidian', label: 'Modo Noturno' },
-                  { id: 'crimson_dawn', label: 'Alvorada' },
-                ] as const
-              ).map((t, idx) => (
+            {/* Sorteador de Seeds, Modo Auto-Pintura & Seletor de Temas */}
+            <div className="flex flex-col sm:items-end gap-2.5">
+              <div className="flex flex-wrap items-center gap-2 bg-[#F8F4EC]/88 backdrop-blur-xl p-2.5 rounded-xl border border-white/80 shadow-[0_8px_24px_rgba(17,16,14,0.05)]">
                 <SumiButton
-                  key={t.id}
-                  variant={
-                    sansuiBannerTheme === t.id && !sansuiCustomWash ? 'ink' : 'washi'
-                  }
+                  variant="crimson"
                   size="sm"
-                  seed={146 + idx}
-                  active={sansuiBannerTheme === t.id && !sansuiCustomWash}
+                  seed={145}
                   onClick={() => {
-                    setSansuiBannerTheme(t.id);
-                    setSansuiCustomWash(undefined);
+                    setSansuiBannerSeed(Math.floor(Math.random() * 89000) + 1000);
+                    setSansuiCardSeeds([
+                      Math.floor(Math.random() * 89000) + 1000,
+                      Math.floor(Math.random() * 89000) + 1000,
+                      Math.floor(Math.random() * 89000) + 1000,
+                      Math.floor(Math.random() * 89000) + 1000,
+                    ]);
                   }}
                 >
-                  {t.label}
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon name="replay" size={16} color="#11100E" />
+                  </span>
+                  <span>Sortear Novas Seeds</span>
                 </SumiButton>
-              ))}
 
-              <label
-                title="Testar com qualquer cor personalizada da sua marca"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[2px] border border-[#11100E] bg-[#FAF7F0] text-xs font-medium text-[#11100E] cursor-pointer"
-              >
-                <input
-                  type="color"
-                  value={sansuiCustomWash || SANSUI_THEMES[sansuiBannerTheme].colors.wash}
-                  onChange={(e) => setSansuiCustomWash(e.target.value)}
-                  className="w-4 h-4 rounded cursor-pointer border-0"
-                />
-                <span>Sua Cor</span>
-              </label>
+                <SumiButton
+                  variant={sansuiAutoPaint ? 'ink' : 'washi'}
+                  size="sm"
+                  seed={144}
+                  active={sansuiAutoPaint}
+                  onClick={() => {
+                    const next = !sansuiAutoPaint;
+                    setSansuiAutoPaint(next);
+                    if (next) setSansuiReplayTrigger((t) => t + 1);
+                  }}
+                  title="Alternar entre auto-pintura progressiva (autoPaint={true}) e pintura estática imediata (autoPaint={false})"
+                >
+                  <span
+                    className={`inline-flex items-center justify-center rounded-[2px] p-0.5 ${
+                      sansuiAutoPaint ? 'bg-[#F7F3EB]' : ''
+                    }`}
+                  >
+                    <SumiIcon name="brush" size={15} color="#11100E" />
+                  </span>
+                  <span>{sansuiAutoPaint ? 'Auto-Pintura: Ativa' : 'Modo Fixo: Ativo'}</span>
+                </SumiButton>
+
+                {sansuiAutoPaint && (
+                  <SumiButton
+                    variant="washi"
+                    size="sm"
+                    seed={143}
+                    onClick={() => setSansuiReplayTrigger((t) => t + 1)}
+                  >
+                    <SumiIcon name="play" size={14} color="#11100E" />
+                    <span>Repintar Tudo</span>
+                  </SumiButton>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 bg-[#F8F4EC]/88 backdrop-blur-xl p-2.5 rounded-xl border border-white/80 shadow-[0_8px_24px_rgba(17,16,14,0.05)]">
+                {(
+                  [
+                    { id: 'classic_washi', label: 'Washi Clássico' },
+                    { id: 'jade_mineral', label: 'Verde Jade' },
+                    { id: 'night_obsidian', label: 'Modo Noturno' },
+                    { id: 'crimson_dawn', label: 'Alvorada' },
+                  ] as const
+                ).map((t, idx) => (
+                  <SumiButton
+                    key={t.id}
+                    variant={
+                      sansuiBannerTheme === t.id && !sansuiCustomWash ? 'ink' : 'washi'
+                    }
+                    size="xs"
+                    seed={146 + idx}
+                    active={sansuiBannerTheme === t.id && !sansuiCustomWash}
+                    onClick={() => {
+                      setSansuiBannerTheme(t.id);
+                      setSansuiCustomWash(undefined);
+                    }}
+                  >
+                    {t.label}
+                  </SumiButton>
+                ))}
+
+                <label
+                  title="Testar com qualquer cor personalizada da sua marca"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] border border-[#11100E] bg-[#FAF7F0] text-xs font-medium text-[#11100E] cursor-pointer"
+                >
+                  <input
+                    type="color"
+                    value={sansuiCustomWash || SANSUI_THEMES[sansuiBannerTheme].colors.wash}
+                    onChange={(e) => setSansuiCustomWash(e.target.value)}
+                    className="w-4 h-4 rounded cursor-pointer border-0"
+                  />
+                  <span>Sua Cor</span>
+                </label>
+              </div>
             </div>
           </div>
 
           {/* BANNER PANORÂMICO PRINCIPAL (Horizonte Fluvial & Barco Solitário) */}
-          <div className="relative h-[290px] sm:h-[360px] md:h-[400px] rounded-2xl border border-[#D5CEC0] overflow-hidden shadow-[0_14px_40px_rgba(17,16,14,0.08)]">
+          <div className="relative h-[300px] sm:h-[370px] md:h-[410px] rounded-2xl border border-[#D5CEC0] overflow-hidden shadow-[0_14px_40px_rgba(17,16,14,0.08)]">
             <SumiSansui
               seed={sansuiBannerSeed}
               composition="panoramic_river"
               theme={sansuiBannerTheme}
               washColor={sansuiCustomWash}
-              treeDensity={1.1}
+              treeDensity={1.45}
               mistDensity={1.0}
               showBoat
               animated
+              autoPaint={sansuiAutoPaint}
+              paintOnView
+              replayTrigger={sansuiReplayTrigger}
+              actionsRef={bannerActionsRef}
             />
 
-            {/* Título Editorial Sobreposto à Esquerda (estilo Kalpa Shan / Sansui) */}
-            <div className="absolute top-6 left-6 sm:top-10 sm:left-10 max-w-md pointer-events-none">
+            {/* Título Editorial Sobreposto à Esquerda com Tradução Interativa no Kanji */}
+            <div className="absolute top-4 left-4 sm:top-8 sm:left-8 max-w-md pointer-events-none">
               <div
-                className={`inline-flex flex-col gap-1 px-4 py-3 rounded-xl backdrop-blur-md border ${
+                className={`pointer-events-auto inline-flex flex-col gap-1.5 px-4 py-3 rounded-xl backdrop-blur-md border ${
                   sansuiBannerTheme === 'night_obsidian'
-                    ? 'bg-[#141518]/78 border-white/15 text-[#E8E2D5]'
-                    : 'bg-[#EFECE4]/78 border-white/75 text-[#181715]'
+                    ? 'bg-[#141518]/82 border-white/15 text-[#E8E2D5]'
+                    : 'bg-[#EFECE4]/85 border-white/80 text-[#181715]'
                 }`}
               >
-                <div className="flex items-center gap-2 text-xs font-tabular opacity-80">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-tabular opacity-85">
                   <span>&lt;SumiSansui composition=&quot;panoramic_river&quot; /&gt;</span>
                   <span>·</span>
                   <span>seed #{sansuiBannerSeed}</span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-editorial font-bold tracking-tight">
-                  山水 · Horizonte Fluvial
-                </h3>
-                <p className="text-xs opacity-85">
-                  Ilhas distantes na neblina, espelho d’água, barco solitário e promontório rochoso.
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <JapaneseCalligraphy
+                    jp="江湖遠景"
+                    romaji="Kōko Enkei"
+                    pt="Águas serenas que se estendem até o horizonte infinito"
+                    variant="hanko"
+                    tooltipPlacement="bottom"
+                  />
+                  <h3 className="text-xl sm:text-2xl font-editorial font-bold tracking-tight">
+                    Horizonte Fluvial &amp; Promontório
+                  </h3>
+                </div>
+                <p className="text-xs opacity-90">
+                  Ilhas distantes na neblina, espelho d’água, garças em voo, barco solitário e
+                  promontório com árvores densas.
                 </p>
               </div>
             </div>
 
-            <div className="absolute bottom-3 right-3 flex items-center gap-2">
+            {/* Ações do Banner: Nova Seed, Repintar, Baixar PNG e Tela Cheia (Ícone Rough.js) */}
+            <div className="absolute bottom-3 right-3 left-3 sm:left-auto flex flex-wrap items-center justify-end gap-2">
               <SumiButton
                 variant="washi"
                 size="xs"
-                seed={152}
+                seed={151}
                 onClick={() =>
                   setSansuiBannerSeed(Math.floor(Math.random() * 89000) + 1000)
                 }
@@ -1103,9 +1187,39 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                 <span>Nova Seed</span>
               </SumiButton>
               <SumiButton
-                variant="ink"
+                variant="washi"
+                size="xs"
+                seed={152}
+                onClick={() => bannerActionsRef.current?.exportPng()}
+                title="Baixar esta pintura em PNG de alta resolução"
+              >
+                <SumiIcon name="download" size={14} color="#11100E" />
+                <span>Baixar PNG</span>
+              </SumiButton>
+              <SumiButton
+                variant="washi"
                 size="xs"
                 seed={153}
+                onClick={() =>
+                  setFullscreenSansui({
+                    composition: 'panoramic_river',
+                    seed: sansuiBannerSeed,
+                    theme: sansuiBannerTheme,
+                    treeDensity: 1.45,
+                    washColor: sansuiCustomWash,
+                    autoPaint: sansuiAutoPaint,
+                    replayKey: 1,
+                  })
+                }
+                title="Expandir paisagem em Tela Cheia"
+              >
+                <SumiIcon name="fullscreen" size={14} color="#11100E" />
+                <span>Tela Cheia</span>
+              </SumiButton>
+              <SumiButton
+                variant="ink"
+                size="xs"
+                seed={154}
                 onClick={() => onOpenPlayground('sansui')}
               >
                 <span>Abrir no Playground →</span>
@@ -1113,39 +1227,156 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
             </div>
           </div>
 
-          {/* GRADE DE 3 CARTÕES CLÁSSICOS: PICOS ESCARPADOS, VALE VERDE MINERAL & MODO NOTURNO */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-            {/* Cartão 1: Picos Escarpados (Karst Peaks) */}
-            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EFECE4] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col">
-              <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden">
+          {/* GRADE DE 4 CARTÕES DEMONSTRATIVOS: INCLUINDO PAISAGEM SUPER DENSA DE FLORESTAS & PAVILHÃO */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {/* Cartão 1 (NOVO): Bosque Denso de Pinheiros & Pavilhão na Montanha */}
+            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EFECE4] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col justify-between">
+              <div className="relative h-[220px] sm:h-[235px] w-full overflow-hidden">
                 <SumiSansui
                   seed={sansuiCardSeeds[0]}
+                  composition="dense_pine_sanctuary"
+                  theme={sansuiBannerTheme}
+                  washColor={sansuiCustomWash}
+                  treeDensity={1.75}
+                  showBoat
+                  autoPaint={sansuiAutoPaint}
+                  paintOnView
+                  replayTrigger={sansuiReplayTrigger}
+                  actionsRef={card0ActionsRef}
+                />
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1">
+                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 text-[10px] font-tabular text-[#11100E] border border-[#D5CEC0] truncate">
+                    dense_pine_sanctuary · #{sansuiCardSeeds[0]}
+                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      title="Sortear nova seed"
+                      onClick={() =>
+                        setSansuiCardSeeds((prev) => [
+                          Math.floor(Math.random() * 89000) + 1000,
+                          prev[1],
+                          prev[2],
+                          prev[3],
+                        ])
+                      }
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="replay" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Baixar PNG desta paisagem"
+                      onClick={() => card0ActionsRef.current?.exportPng()}
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="download" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Visualizar em Tela Cheia"
+                      onClick={() =>
+                        setFullscreenSansui({
+                          composition: 'dense_pine_sanctuary',
+                          seed: sansuiCardSeeds[0],
+                          theme: sansuiBannerTheme,
+                          treeDensity: 1.75,
+                          washColor: sansuiCustomWash,
+                          autoPaint: sansuiAutoPaint,
+                          replayKey: 1,
+                        })
+                      }
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="fullscreen" size={14} color="#11100E" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3.5 sm:p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-sm font-semibold text-[#11100E]">
+                    Bosque Denso &amp; Pavilhão
+                  </h4>
+                  <p className="text-xs text-[#3F3D39]">
+                    Florestas densas de pinheiros, árvores de copa em nanquim e pavilhão
+                  </p>
+                </div>
+                <JapaneseCalligraphy
+                  jp="深山"
+                  romaji="Shinzan"
+                  pt="Santuário sereno entre florestas densas de pinheiros na montanha"
+                  variant="hanko"
+                  tooltipPlacement="top"
+                />
+              </div>
+            </div>
+
+            {/* Cartão 2: Picos Escarpados (Karst Peaks) */}
+            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EFECE4] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col justify-between">
+              <div className="relative h-[220px] sm:h-[235px] w-full overflow-hidden">
+                <SumiSansui
+                  seed={sansuiCardSeeds[1]}
                   composition="karst_peaks"
                   theme={sansuiBannerTheme}
                   washColor={sansuiCustomWash}
-                  treeDensity={1.15}
+                  treeDensity={1.45}
                   showBoat
+                  autoPaint={sansuiAutoPaint}
+                  paintOnView
+                  replayTrigger={sansuiReplayTrigger}
+                  actionsRef={card1ActionsRef}
                 />
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/90 text-[11px] font-tabular text-[#11100E] border border-[#D5CEC0]">
-                    karst_peaks · #{sansuiCardSeeds[0]}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1">
+                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 text-[10px] font-tabular text-[#11100E] border border-[#D5CEC0] truncate">
+                    karst_peaks · #{sansuiCardSeeds[1]}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSansuiCardSeeds((prev) => [
-                        Math.floor(Math.random() * 89000) + 1000,
-                        prev[1],
-                        prev[2],
-                      ])
-                    }
-                    className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 hover:bg-[#11100E] hover:text-white text-[11px] font-medium text-[#11100E] border border-[#11100E]/40 transition-colors cursor-pointer"
-                  >
-                    Nova Seed
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      title="Sortear nova seed"
+                      onClick={() =>
+                        setSansuiCardSeeds((prev) => [
+                          prev[0],
+                          Math.floor(Math.random() * 89000) + 1000,
+                          prev[2],
+                          prev[3],
+                        ])
+                      }
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="replay" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Baixar PNG desta paisagem"
+                      onClick={() => card1ActionsRef.current?.exportPng()}
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="download" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Visualizar em Tela Cheia"
+                      onClick={() =>
+                        setFullscreenSansui({
+                          composition: 'karst_peaks',
+                          seed: sansuiCardSeeds[1],
+                          theme: sansuiBannerTheme,
+                          treeDensity: 1.45,
+                          washColor: sansuiCustomWash,
+                          autoPaint: sansuiAutoPaint,
+                          replayKey: 1,
+                        })
+                      }
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="fullscreen" size={14} color="#11100E" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
+              <div className="p-3.5 sm:p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
                 <div>
                   <h4 className="text-sm font-semibold text-[#11100E]">
                     Picos Escarpados &amp; Abismo
@@ -1164,44 +1395,78 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
               </div>
             </div>
 
-            {/* Cartão 2: Vale das Cinco Neblinas (Verde Mineral Jade) */}
-            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EDE8DC] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col">
-              <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden">
+            {/* Cartão 3: Vale das Cinco Neblinas (Verde Mineral Jade) */}
+            <div className="group rounded-2xl border border-[#D5CEC0] bg-[#EDE8DC] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.06)] flex flex-col justify-between">
+              <div className="relative h-[220px] sm:h-[235px] w-full overflow-hidden">
                 <SumiSansui
-                  seed={sansuiCardSeeds[1]}
+                  seed={sansuiCardSeeds[2]}
                   composition="layered_valley"
                   theme="jade_mineral"
                   washColor={sansuiCustomWash}
                   ridgeLayers={6}
-                  treeDensity={1.2}
+                  treeDensity={1.55}
                   showBoat
+                  autoPaint={sansuiAutoPaint}
+                  paintOnView
+                  replayTrigger={sansuiReplayTrigger}
+                  actionsRef={card2ActionsRef}
                 />
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/90 text-[11px] font-tabular text-[#11100E] border border-[#D5CEC0]">
-                    layered_valley · #{sansuiCardSeeds[1]}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1">
+                  <span className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 text-[10px] font-tabular text-[#11100E] border border-[#D5CEC0] truncate">
+                    layered_valley · #{sansuiCardSeeds[2]}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSansuiCardSeeds((prev) => [
-                        prev[0],
-                        Math.floor(Math.random() * 89000) + 1000,
-                        prev[2],
-                      ])
-                    }
-                    className="px-2 py-0.5 rounded bg-[#F8F4EC]/92 hover:bg-[#11100E] hover:text-white text-[11px] font-medium text-[#11100E] border border-[#11100E]/40 transition-colors cursor-pointer"
-                  >
-                    Nova Seed
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      title="Sortear nova seed"
+                      onClick={() =>
+                        setSansuiCardSeeds((prev) => [
+                          prev[0],
+                          prev[1],
+                          Math.floor(Math.random() * 89000) + 1000,
+                          prev[3],
+                        ])
+                      }
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="replay" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Baixar PNG desta paisagem"
+                      onClick={() => card2ActionsRef.current?.exportPng()}
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="download" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Visualizar em Tela Cheia"
+                      onClick={() =>
+                        setFullscreenSansui({
+                          composition: 'layered_valley',
+                          seed: sansuiCardSeeds[2],
+                          theme: 'jade_mineral',
+                          treeDensity: 1.55,
+                          washColor: sansuiCustomWash,
+                          autoPaint: sansuiAutoPaint,
+                          replayKey: 1,
+                        })
+                      }
+                      className="p-1 rounded bg-[#F8F4EC]/92 hover:bg-[#DBD4C6] text-[#11100E] border border-[#11100E]/35 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="fullscreen" size={14} color="#11100E" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
+              <div className="p-3.5 sm:p-4 bg-[#F8F4EC]/95 border-t border-[#D5CEC0] flex items-center justify-between gap-2">
                 <div>
                   <h4 className="text-sm font-semibold text-[#11100E]">
-                    Vale das Cinco Neblinas (Verde Jade)
+                    Vale das Cinco Neblinas (Jade)
                   </h4>
                   <p className="text-xs text-[#3F3D39]">
-                    Camadas sobrepostas com aguada mineral celadon
+                    Camadas sobrepostas com aguada mineral celadon e matas
                   </p>
                 </div>
                 <JapaneseCalligraphy
@@ -1214,39 +1479,72 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
               </div>
             </div>
 
-            {/* Cartão 3: Desfiladeiro Noturno (Modo Noturno / Night Obsidian) */}
-            <div className="group rounded-2xl border border-[#2A2D34] bg-[#141518] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.14)] flex flex-col">
-              <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden">
+            {/* Cartão 4: Desfiladeiro Noturno (Modo Noturno / Night Obsidian) */}
+            <div className="group rounded-2xl border border-[#2A2D34] bg-[#141518] overflow-hidden shadow-[0_10px_28px_rgba(17,16,14,0.14)] flex flex-col justify-between">
+              <div className="relative h-[220px] sm:h-[235px] w-full overflow-hidden">
                 <SumiSansui
-                  seed={sansuiCardSeeds[2]}
+                  seed={sansuiCardSeeds[3]}
                   composition="twin_gorges"
                   theme="night_obsidian"
-                  treeDensity={1.15}
+                  treeDensity={1.45}
                   showBoat
+                  autoPaint={sansuiAutoPaint}
+                  paintOnView
+                  replayTrigger={sansuiReplayTrigger}
+                  actionsRef={card3ActionsRef}
                 />
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded bg-[#1E2025]/90 text-[11px] font-tabular text-[#E8E2D5] border border-white/15">
-                    night_obsidian · #{sansuiCardSeeds[2]}
+                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1">
+                  <span className="px-2 py-0.5 rounded bg-[#1E2025]/90 text-[10px] font-tabular text-[#E8E2D5] border border-white/15 truncate">
+                    night_obsidian · #{sansuiCardSeeds[3]}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSansuiCardSeeds((prev) => [
-                        prev[0],
-                        prev[1],
-                        Math.floor(Math.random() * 89000) + 1000,
-                      ])
-                    }
-                    className="px-2 py-0.5 rounded bg-[#E8E2D5] hover:bg-[#C8232C] hover:text-white text-[11px] font-medium text-[#141518] border border-white/20 transition-colors cursor-pointer"
-                  >
-                    Nova Seed
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      title="Sortear nova seed"
+                      onClick={() =>
+                        setSansuiCardSeeds((prev) => [
+                          prev[0],
+                          prev[1],
+                          prev[2],
+                          Math.floor(Math.random() * 89000) + 1000,
+                        ])
+                      }
+                      className="p-1 rounded bg-[#FAF7F0] hover:bg-[#DBD4C6] text-[#141518] border border-white/30 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="replay" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Baixar PNG desta paisagem"
+                      onClick={() => card3ActionsRef.current?.exportPng()}
+                      className="p-1 rounded bg-[#FAF7F0] hover:bg-[#DBD4C6] text-[#141518] border border-white/30 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="download" size={14} color="#11100E" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Visualizar em Tela Cheia"
+                      onClick={() =>
+                        setFullscreenSansui({
+                          composition: 'twin_gorges',
+                          seed: sansuiCardSeeds[3],
+                          theme: 'night_obsidian',
+                          treeDensity: 1.45,
+                          autoPaint: sansuiAutoPaint,
+                          replayKey: 1,
+                        })
+                      }
+                      className="p-1 rounded bg-[#FAF7F0] hover:bg-[#DBD4C6] text-[#141518] border border-white/30 transition-colors cursor-pointer"
+                    >
+                      <SumiIcon name="fullscreen" size={14} color="#11100E" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="p-4 bg-[#191B1F] border-t border-white/10 flex items-center justify-between gap-2 text-[#E8E2D5]">
+              <div className="p-3.5 sm:p-4 bg-[#191B1F] border-t border-white/10 flex items-center justify-between gap-2 text-[#E8E2D5]">
                 <div>
                   <h4 className="text-sm font-semibold text-[#FAF7F0]">
-                    Noite Obsidiana (Dark Mode Nativo)
+                    Noite Obsidiana (Dark Mode)
                   </h4>
                   <p className="text-xs text-stone-400">
                     Cristas iluminadas em giz marfim sobre céu noturno
@@ -1301,7 +1599,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
             </p>
           </div>
 
-          {/* Abas para os 5 Estilos Poéticos: Centralizadas em todas as telas sem barra de rolagem desnecessária */}
+          {/* Abas para os 5 Estilos Poéticos: Centralizadas em todas as telas com tradução no Kanji */}
           <div className="flex flex-wrap items-center justify-center gap-2 mb-6 sm:mb-8">
             {CURATED_BRUSH_EXPERIENCES.map((exp, idx) => {
               const isSelected = idx === selectedExpIdx;
@@ -1315,13 +1613,15 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
                   onClick={() => setSelectedExpIdx(idx)}
                 >
                   <span>{exp.title}</span>
-                  <span
+                  <JapaneseCalligraphy
+                    jp={exp.jp}
+                    romaji={exp.romaji}
+                    pt={exp.ptMeaning}
+                    tooltipPlacement="top"
                     className={`font-editorial text-sm ${
-                      isSelected ? 'text-[#C8232C]' : 'text-[#3F3D39]'
+                      isSelected ? 'text-[#FF8A8F]' : 'text-[#C8232C]'
                     }`}
-                  >
-                    {exp.jp}
-                  </span>
+                  />
                 </SumiButton>
               );
             })}
@@ -1457,6 +1757,204 @@ export const LandingView: React.FC<LandingViewProps> = ({ onOpenPlayground }) =>
           </div>
         </div>
       </section>
+
+      {/* =====================================================================
+          MODAL IMERSIVO EM TELA CHEIA PARA CONTEMPLAÇÃO E EXPORTAÇÃO SANSUI
+          ===================================================================== */}
+      {fullscreenSansui && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualização em Tela Cheia da Paisagem Sansui"
+          className="fixed inset-0 z-[100] bg-[#11100E]/92 backdrop-blur-md flex flex-col justify-between p-3 sm:p-5"
+        >
+          {/* Canvas da Paisagem em Tela Cheia */}
+          <div className="relative flex-1 w-full rounded-2xl overflow-hidden border border-[#D5CEC0]/40 shadow-2xl">
+            <SumiSansui
+              composition={fullscreenSansui.composition}
+              seed={fullscreenSansui.seed}
+              theme={fullscreenSansui.theme}
+              washColor={fullscreenSansui.washColor}
+              treeDensity={fullscreenSansui.treeDensity}
+              ridgeLayers={6}
+              showBoat
+              animated
+              autoPaint={fullscreenSansui.autoPaint}
+              paintOnView={false}
+              replayTrigger={fullscreenSansui.replayKey}
+              actionsRef={modalActionsRef}
+            />
+
+            {/* Barra Superior Flutuante no Modal */}
+            <div className="absolute top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+              <div className="pointer-events-auto inline-flex flex-wrap items-center gap-2.5 px-3.5 py-2 rounded-xl bg-[#F8F4EC]/92 backdrop-blur-xl border border-[#D5CEC0] shadow-lg text-xs text-[#11100E]">
+                {(() => {
+                  const compMeta =
+                    SANSUI_COMPOSITIONS.find((c) => c.id === fullscreenSansui.composition) ??
+                    SANSUI_COMPOSITIONS[0];
+                  return (
+                    <>
+                      <JapaneseCalligraphy
+                        jp={compMeta.jp}
+                        romaji={compMeta.romaji}
+                        pt={compMeta.ptMeaning}
+                        variant="hanko"
+                        tooltipPlacement="bottom"
+                      />
+                      <span className="font-semibold text-sm">{compMeta.name}</span>
+                      <span className="font-tabular text-[#C8232C] font-semibold">
+                        seed #{fullscreenSansui.seed}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="pointer-events-auto flex items-center gap-2">
+                <SumiButton
+                  variant="crimson"
+                  size="sm"
+                  seed={801}
+                  onClick={() => modalActionsRef.current?.exportPng()}
+                >
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon name="download" size={16} color="#11100E" />
+                  </span>
+                  <span>Baixar PNG (Alta Resolução)</span>
+                </SumiButton>
+
+                <SumiButton
+                  variant="washi"
+                  size="sm"
+                  seed={802}
+                  onClick={() => setFullscreenSansui(null)}
+                >
+                  <SumiIcon name="minimize" size={16} color="#11100E" />
+                  <span>Sair da Tela Cheia</span>
+                </SumiButton>
+              </div>
+            </div>
+
+            {/* Barra Inferior Flutuante de Controles Interativos no Modal */}
+            <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[#F8F4EC]/92 backdrop-blur-xl border border-[#D5CEC0] shadow-lg">
+              {/* Seletores de Composição */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {SANSUI_COMPOSITIONS.map((comp, idx) => {
+                  const active = fullscreenSansui.composition === comp.id;
+                  return (
+                    <SumiButton
+                      key={comp.id}
+                      variant={active ? 'ink' : 'washi'}
+                      size="xs"
+                      seed={810 + idx}
+                      active={active}
+                      onClick={() =>
+                        setFullscreenSansui((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                composition: comp.id,
+                                replayKey: prev.replayKey + 1,
+                              }
+                            : null
+                        )
+                      }
+                    >
+                      <span>{comp.name.split('&')[0].trim()}</span>
+                    </SumiButton>
+                  );
+                })}
+              </div>
+
+              {/* Seletores de Tema, Densidade de Árvores e Seed */}
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-2 text-xs text-[#11100E] px-2 py-1 rounded bg-[#EFECE4] border border-[#D5CEC0]">
+                  <span>Florestas:</span>
+                  <input
+                    type="range"
+                    min={0.4}
+                    max={2.2}
+                    step={0.15}
+                    value={fullscreenSansui.treeDensity}
+                    onChange={(e) =>
+                      setFullscreenSansui((prev) =>
+                        prev ? { ...prev, treeDensity: parseFloat(e.target.value) } : null
+                      )
+                    }
+                    className="w-20 accent-[#C8232C]"
+                  />
+                </label>
+
+                {(
+                  [
+                    { id: 'classic_washi', label: 'Washi' },
+                    { id: 'jade_mineral', label: 'Jade' },
+                    { id: 'night_obsidian', label: 'Noturno' },
+                    { id: 'crimson_dawn', label: 'Alvorada' },
+                  ] as const
+                ).map((th, idx) => (
+                  <SumiButton
+                    key={th.id}
+                    variant={fullscreenSansui.theme === th.id ? 'ink' : 'washi'}
+                    size="xs"
+                    seed={820 + idx}
+                    active={fullscreenSansui.theme === th.id}
+                    onClick={() =>
+                      setFullscreenSansui((prev) =>
+                        prev ? { ...prev, theme: th.id, washColor: undefined } : null
+                      )
+                    }
+                  >
+                    <span>{th.label}</span>
+                  </SumiButton>
+                ))}
+
+                <SumiButton
+                  variant="washi"
+                  size="xs"
+                  seed={830}
+                  onClick={() =>
+                    setFullscreenSansui((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            autoPaint: true,
+                            replayKey: prev.replayKey + 1,
+                          }
+                        : null
+                    )
+                  }
+                >
+                  <SumiIcon name="brush" size={14} color="#11100E" />
+                  <span>Repintar</span>
+                </SumiButton>
+
+                <SumiButton
+                  variant="crimson"
+                  size="xs"
+                  seed={831}
+                  onClick={() =>
+                    setFullscreenSansui((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            seed: Math.floor(Math.random() * 89000) + 1000,
+                            replayKey: prev.replayKey + 1,
+                          }
+                        : null
+                    )
+                  }
+                >
+                  <span className="inline-flex items-center justify-center bg-[#F7F3EB] rounded-[2px] p-0.5">
+                    <SumiIcon name="replay" size={13} color="#11100E" />
+                  </span>
+                  <span>Nova Seed</span>
+                </SumiButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

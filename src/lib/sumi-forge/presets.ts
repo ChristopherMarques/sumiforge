@@ -132,6 +132,15 @@ export const SANSUI_COMPOSITIONS: {
     description:
       'Picos imponentes flanqueando um canal profundo com ilha de pinheiros em primeiro plano, perfeito tanto em papel claro quanto no Modo Noturno.',
   },
+  {
+    id: 'dense_pine_sanctuary',
+    name: 'Bosque Denso & Pavilhão na Montanha',
+    jp: '深山幽谷',
+    romaji: 'Shinzan Yūkoku',
+    ptMeaning: 'Santuário sereno entre florestas densas de pinheiros e vales profundos',
+    description:
+      'Paisagem ricamente povoada por matas densas de pinheiros, árvores de copa em nanquim, pavilhão oriental na encosta e bando de garças.',
+  },
 ];
 
 export const MAGIC_SCHOOLS: Record<SchoolId, MagicSchool> = {

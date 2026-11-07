@@ -25,7 +25,9 @@ export type SumiIconName =
   | 'sliders'
   | 'chevron-down'
   | 'close'
-  | 'terminal';
+  | 'terminal'
+  | 'fullscreen'
+  | 'minimize';
 
 export interface SumiIconProps {
   name: SumiIconName;
@@ -419,6 +421,82 @@ export const SumiIcon: React.FC<SumiIconProps> = ({
         ...opts,
         strokeWidth: Math.max(2.2, 2.4 * s),
       });
+    } else if (name === 'fullscreen') {
+      // Cantoneiras de expansão em tela cheia desenhadas à mão com Rough.js
+      // Canto superior esquerdo
+      rc.linearPath(
+        [
+          [3.8 * s, 9.2 * s],
+          [3.8 * s, 3.8 * s],
+          [9.2 * s, 3.8 * s],
+        ],
+        opts
+      );
+      rc.line(3.8 * s, 3.8 * s, 9.6 * s, 9.6 * s, opts);
+      // Canto superior direito
+      rc.linearPath(
+        [
+          [14.8 * s, 3.8 * s],
+          [20.2 * s, 3.8 * s],
+          [20.2 * s, 9.2 * s],
+        ],
+        opts
+      );
+      rc.line(20.2 * s, 3.8 * s, 14.4 * s, 9.6 * s, opts);
+      // Canto inferior esquerdo
+      rc.linearPath(
+        [
+          [3.8 * s, 14.8 * s],
+          [3.8 * s, 20.2 * s],
+          [9.2 * s, 20.2 * s],
+        ],
+        opts
+      );
+      rc.line(3.8 * s, 20.2 * s, 9.6 * s, 14.4 * s, opts);
+      // Canto inferior direito
+      rc.linearPath(
+        [
+          [14.8 * s, 20.2 * s],
+          [20.2 * s, 20.2 * s],
+          [20.2 * s, 14.8 * s],
+        ],
+        opts
+      );
+      rc.line(20.2 * s, 20.2 * s, 14.4 * s, 14.4 * s, opts);
+    } else if (name === 'minimize') {
+      // Cantoneiras apontando para o centro (sair da tela cheia) com Rough.js
+      rc.linearPath(
+        [
+          [3.8 * s, 9.4 * s],
+          [9.4 * s, 9.4 * s],
+          [9.4 * s, 3.8 * s],
+        ],
+        opts
+      );
+      rc.linearPath(
+        [
+          [14.6 * s, 3.8 * s],
+          [14.6 * s, 9.4 * s],
+          [20.2 * s, 9.4 * s],
+        ],
+        opts
+      );
+      rc.linearPath(
+        [
+          [3.8 * s, 14.6 * s],
+          [9.4 * s, 14.6 * s],
+          [9.4 * s, 20.2 * s],
+        ],
+        opts
+      );
+      rc.linearPath(
+        [
+          [14.6 * s, 20.2 * s],
+          [14.6 * s, 14.6 * s],
+          [20.2 * s, 14.6 * s],
+        ],
+        opts
+      );
     }
 
     ctx.restore();

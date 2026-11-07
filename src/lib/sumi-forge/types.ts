@@ -159,7 +159,8 @@ export type SansuiComposition =
   | 'panoramic_river'
   | 'karst_peaks'
   | 'layered_valley'
-  | 'twin_gorges';
+  | 'twin_gorges'
+  | 'dense_pine_sanctuary';
 
 export type SansuiThemeId =
   | 'classic_washi'
